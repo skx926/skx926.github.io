@@ -1,0 +1,1309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>CODE &amp; ZEN</title>
+  <subtitle>凯旋的博客</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://skx926.me/"/>
+  <updated>2020-03-21T04:26:05.525Z</updated>
+  <id>http://skx926.me/</id>
+  
+  <author>
+    <name>Kyle Sun</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>SDK开发和打包静态库遇到的坑</title>
+    <link href="http://skx926.me/2019/03/13/sdk-development/"/>
+    <id>http://skx926.me/2019/03/13/sdk-development/</id>
+    <published>2019-03-13T06:27:34.000Z</published>
+    <updated>2020-03-21T04:26:05.525Z</updated>
+    
+    <content type="html"><![CDATA[<p>我们在使用第三方库的时候一般有三种接入方式：</p>
+<ol type="1">
+<li>直接把第三方库的源码拖入工程</li>
+<li>通过CocoaPods等包管理工具进行引入</li>
+<li>通过.a或者.framework静态库引入</li>
+</ol>
+<p>前两种情况一般是用于引入开源的项目，比如<code>AFNetworking</code>、<code>SDWebImage</code>；第三种情况一般是用于引入一些不方便开源的SDK，比如微信支付的SDK、百度地图的SDK。</p>
+<h2 id="sdk开发注意点">SDK开发注意点</h2>
+<p>如果我们要做一个静态库形式的SDK，有什么需要注意的呢？</p>
+<ol type="1">
+<li>没有必要暴露的头文件就不要暴露给外部</li>
+<li>类名、分类方法名、全局变量、全局函数、枚举、宏定义要加前缀</li>
+<li>SDK中引入的第三方库和接入项目中引入的第三方库冲突问题</li>
+</ol>
+<p>这里的第三点是我们在SDK开发中需要重点注意的问题：比如说我们SDK中引入了<code>AFNetworking</code>，我们打包的静态库中就会包含AF的所有代码，如果接入我们SDK的项目中也引入了AF，编译的时候就会报<code>duplicate symbols</code>符号重复的错误。</p>
+<p>怎么解决这个问题呢？有下面几种方法：</p>
+<ul>
+<li>改名。顾名思义，改名就是把我们SDK中引入的AF库中的类名、分类方法名、全局变量、全局函数、枚举、宏定义都加上前缀。这个办法有点麻烦，后续如果要升级第三方库就又得改一遍，当然如果写一个脚本来帮我们做这个事情也挺不错。这个方法的好处就是如果接入方项目中和我们SDK中引入的AF的版本不一样时也不会出错。因为他们是完全独立的，不会互相影响。</li>
+<li>使用CocoaPods引入第三方库并使用<a href="https://github.com/CocoaPods/CocoaPods-packager" target="_blank" rel="noopener">CocoaPods Packager</a>来打包静态库。CocoaPods Packager在打包静态库的过程中会自动将引入的第三方库的符号加上前缀（Name-Mangling）。如果我们引入的第三方库也是一个静态库，那这个自动改名就无法生效了。</li>
+<li>打包的静态库中不要包含第三方库，让接入方去引入。这样就可以保证同一个第三方库只有一份了。但是如果我们SDK中使用的第三方库的和接入方项目中引入的第三方库的版本不同的时候也会有一些问题。需要双方修改成使用统计的版本，要么你改，要么我改。</li>
+<li>SDK中不要引入第三方库，自己写一份实现（如果你不差时间、也能写得出来的话）。</li>
+</ul>
+<p>上面这三种方式各有各的优缺点，总结起来一下就是：如果SDK中引入的第三方库很少或者很简单的话，你可以考虑手动改名字或者自己实现一个；如果SDK中不会引入其他的静态库，使用CocoaPods Packager将会是你不二的选择；如果SDK中引入了静态库，那么在打包静态库的时候就不要把引入的静态库打包进去，直接把两个静态库文件（SDK的静态库和SDK引入的静态库）都提供给接入方使用。</p>
+<h2 id="使用cocoapods-packager打包静态库">使用CocoaPods Packager打包静态库</h2>
+<p>由于我们初期没有预估到SDK中会引入静态库，所以最先采用了CocoaPods Packager的方式。</p>
+<h3 id="创建私有pod库">创建私有pod库</h3>
+<p>要使用CocoaPods Packager打包静态库，我们首先得有一个pod库：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod lib create <span class="string">'YourPodName'</span></span><br></pre></td></tr></table></figure>
+<p>使用上面的命令之后我们就可以创建一个名为<code>YourPodName</code>的本地pod库，你会注意到Pods项目中比平常多了一个Development Pods文件夹，这个文件夹下面的<code>YourPodName</code>文件夹就是我们的库的源文件的存放目录。打开Podfile文件你会看到一行<code>pod 'YourPodName', :path =&gt; '../'</code>，这个path指向的就是我们的pod库的podspec文件的路径，也就是Podfile文件的上一级目录。</p>
+<p>打开<code>YourPodName.podspec</code>文件可以看到很多内容，我们逐个来解释一下：</p>
+<figure class="highlight ruby"><table><tr><td class="code"><pre><span class="line">Pod::Spec.new <span class="keyword">do</span><span class="params">|s|</span></span><br><span class="line">  <span class="comment"># 项目名称</span></span><br><span class="line">  s.name             = <span class="string">'YourPodName'</span></span><br><span class="line">  <span class="comment"># 版本</span></span><br><span class="line">  s.version          = <span class="string">'0.1.0'</span></span><br><span class="line">  <span class="comment"># 简介</span></span><br><span class="line">  s.summary          = <span class="string">'A short description of YourPodName.'</span></span><br><span class="line">  <span class="comment"># 详细介绍</span></span><br><span class="line">  s.description      = <span class="string">"详细介绍"</span></span><br><span class="line">  <span class="comment"># 项目主页</span></span><br><span class="line">  s.homepage         = <span class="string">"https://github.com/skx926/YourPodName"</span></span><br><span class="line">  <span class="comment"># 截图                      </span></span><br><span class="line">  s.screenshots      = <span class="string">"www.example.com/screenshots_1"</span></span><br><span class="line">  <span class="comment"># 支持的协议及文件</span></span><br><span class="line">  s.license          = &#123; <span class="symbol">:type</span> =&gt; <span class="string">'MIT'</span>, <span class="symbol">:file</span> =&gt; <span class="string">'LICENSE'</span> &#125;</span><br><span class="line">  <span class="comment"># 作者名字和邮箱</span></span><br><span class="line">  s.author           = &#123; <span class="string">'skx926'</span> =&gt; <span class="string">'skx926@gmail.com'</span> &#125;</span><br><span class="line">  <span class="comment"># 仓库地址</span></span><br><span class="line">  s.source           = &#123; <span class="symbol">:git</span> =&gt; <span class="string">'https://github.com/skx926/YourPodName.git'</span>, <span class="symbol">:tag</span> =&gt; s.version.to_s &#125;</span><br><span class="line">  <span class="comment"># 社交媒体地址</span></span><br><span class="line">  s.social_media_url = <span class="string">'https://twitter.com/skx926'</span>  </span><br><span class="line">  <span class="comment"># 最低要求的系统版本</span></span><br><span class="line">  s.ios.deployment_target = <span class="string">'8.0'</span></span><br><span class="line">  <span class="comment"># 源文件路径</span></span><br><span class="line">  s.source_files = <span class="string">'YourPodName/Classes/**/*'</span></span><br><span class="line">  <span class="comment"># 资源文件存放位置</span></span><br><span class="line">  s.resource_bundles = &#123;</span><br><span class="line">    <span class="string">'YourPodName'</span> =&gt; [<span class="string">'YourPodName/Assets/*.png'</span>]</span><br><span class="line">  &#125; </span><br><span class="line">  <span class="comment"># 暴露给外部的头文件</span></span><br><span class="line">  s.public_header_files = <span class="string">'YourPodName/Classes/**/*.h'</span></span><br><span class="line">  <span class="comment"># 项目中使用的系统framework</span></span><br><span class="line">  s.frameworks = <span class="string">'UIKit'</span>, <span class="string">'MapKit'</span></span><br><span class="line">  <span class="comment"># 项目中使用的第三方framework</span></span><br><span class="line">  s.vendored_frameworks = <span class="string">'Thirdparty.framework'</span></span><br><span class="line">  <span class="comment"># 项目中使用的系统静态库</span></span><br><span class="line">  s.libraries = <span class="string">'iconv'</span>, <span class="string">'xml2'</span></span><br><span class="line">  <span class="comment"># 项目中使用的第三方静态库</span></span><br><span class="line">  s.vendored_libraries = <span class="string">'Library/gmssl/*.a'</span></span><br><span class="line">  <span class="comment"># Xcode配置</span></span><br><span class="line">  s.xcconfig = &#123; <span class="string">"HEADER_SEARCH_PATHS"</span> =&gt; <span class="string">"$&#123;PODS_ROOT&#125;/../../Library/gmssl"</span>&#125;</span><br><span class="line">  <span class="comment"># 项目依赖的第三方库</span></span><br><span class="line">  s.dependency <span class="string">'AFNetworking'</span>, <span class="string">'~&gt; 2.3'</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>比较麻烦的是我们要往pod库中添加源文件的时候不能只在Xcode中拖进去，如果要正常使用的话，每次添加文件都需要执行<code>pod install</code>命令。</p>
+<p>项目中使用的资源文件需要添加到<code>s.resource_bundles</code>里面所设置的路径当中，执行<code>pod install</code>命令之后他们就会出现在Resources文件夹当中。</p>
+<p>在项目运行的时候这些资源文件会被打包到<code>YourPodName.bundle</code>当中，这个bundle的名字就是<code>s.resource_bundle</code>中设置的。</p>
+<p>由于这些资源被打包在bundle之中，使用的时候也需要有所变化。我们以图片为例：假如我们有一张名为<code>avatar@2x.png</code>的图片放在<code>YourPodName/Assets/images/</code>文件夹下，它在bundle中的路径就是<code>YourPodName.bundle/images/avatar@2x.png</code>，要使用这张图片的话我们首先得拿到这个bundle的实例，为了方便拿到这个实例，我们给NSBundle增加一个分类方法:</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">+ (<span class="built_in">NSBundle</span> *)ks_bundle &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">NSBundle</span> *resourceBundle = <span class="literal">nil</span>;</span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">    <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        <span class="comment">// 通过SDK中的一个类来获取SDK所在的Bundle，然后在在这个bundle中寻找存放我们资源文件的bundle</span></span><br><span class="line">        <span class="built_in">NSString</span> *resourceBundlePath = [[<span class="built_in">NSBundle</span> bundleForClass:<span class="built_in">NSClassFromString</span>(<span class="string">@"AnyClassInYourPod"</span>)] pathForResource:<span class="string">@"YourPodName"</span> ofType:<span class="string">@"bundle"</span>];</span><br><span class="line">        resourceBundle = [<span class="keyword">self</span> bundleWithPath:resourceBundlePath];</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="keyword">return</span> resourceBundle;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后再给UIImage增加一个分类方法：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">+ (<span class="built_in">UIImage</span> *)ks_imageNamed:(<span class="built_in">NSString</span> *)name &#123;</span><br><span class="line">    <span class="comment">// 图片名称需要包含它的路径</span></span><br><span class="line">    <span class="built_in">NSString</span> *imageName = [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"images/%@"</span>, name];</span><br><span class="line">    <span class="keyword">return</span> [<span class="built_in">UIImage</span> imageNamed:imageName inBundle:<span class="built_in">NSBundle</span>.spy_bundle compatibleWithTraitCollection:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样就可以通过<code>[UIImage ks_imageNamed:@"avatar"]</code>来获取图片了。</p>
+<h3 id="安装cocoapods-packager">安装CocoaPods Packager</h3>
+<p>CocoaPods Packager是CocoaPods的一个插件，需要单独的命令来安装:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo gem install cocoapods-packager</span><br></pre></td></tr></table></figure>
+<p>安装成功就可以使用<code>pod package YourPodName.podspec</code>命令来打包了，我们来看一下这个命令有哪些参数:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">// 强制覆盖之前生成的文件</span><br><span class="line">--force</span><br><span class="line">// 不使用name-mangling技术，也就是自动改类名等符号</span><br><span class="line">--no-mangle</span><br><span class="line">// 生成静态的framework</span><br><span class="line">--embedded</span><br><span class="line">// 生成静态.a</span><br><span class="line">--library</span><br><span class="line">// 生成动态framework</span><br><span class="line">--dynamic</span><br><span class="line">// 使用本地文件</span><br><span class="line">--local</span><br><span class="line">// 生成动态framework的时候需要这个BundleId来签名</span><br><span class="line">--bundle-identifier</span><br><span class="line">// 不包含依赖的符号表，也就是不把依赖的第三方库打包进去</span><br><span class="line">--exclude-deps</span><br><span class="line">// 生成debug还是release的库，默认是release</span><br><span class="line">--configuration=Release </span><br><span class="line">// 如果你的pod库有subspec，那么加上这个命名表示只给某个或几个subspec生成二进制库</span><br><span class="line">--subspecs=subspec1,subspec2</span><br><span class="line">// 默认是CocoaPods的Specs仓库，如果你的项目依赖使用的是私有的<span class="built_in">source</span>，就可以通过这个参数来设置</span><br><span class="line">--spec-sources=private,https://github.com/CocoaPods/Specs.git</span><br></pre></td></tr></table></figure>
+<p>使用下面的命令就可以打包静态库：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod package YourPodName.podspec --force --library</span><br></pre></td></tr></table></figure>
+<p>打包的流程是这样的：</p>
+<ol type="1">
+<li>根据podspec里<code>s.source</code>指定的git仓库中克隆tag和<code>s.version</code>相同的版本到本地</li>
+<li>执行pod install安装依赖（这些依赖的来源就是<code>--spec-sources</code>参数所指定的）</li>
+<li>编译生成目标文件</li>
+<li>执行Name-Mangling进行改名</li>
+<li>生成最终的静态库文件</li>
+</ol>
+<p>由于每次打包都是从git仓库上面克隆，所以我们在打包之前必须把本地的代码提交到git仓库并打上相应版本的tag。</p>
+<p>这样操作确实挺麻烦，所以有人给CocoaPods Packager提交了一个<a href="https://github.com/CocoaPods/cocoapods-packager/pull/195" target="_blank" rel="noopener">Pull Request:Add --local option to use local sources while packaging #195</a> 来增加一个<code>--library</code>的命令来支持使用本地的环境直接打包，而不是每次都从git上面clone。</p>
+<p>作者已经merge了这个pr，但是并没有发布新的版本，所以使用gem更新cocoapods-packager这个插件的话是更新不了的，你可以自己从<a href="https://github.com/CocoaPods/cocoapods-packager" target="_blank" rel="noopener">GitHub</a>上克隆源码编译安装最新版就支持这个功能了。</p>
+<h3 id="name-mangling做了哪些事">Name-Mangling做了哪些事</h3>
+<p>到目前为止，如果你的SDK里面没有包含第三方的静态库，那么使用上面的命令就已经很舒服了。你可能会好奇Name-Mangling具体会改哪些东西，我们从CocoaPods Packager源码<a href="https://github.com/CocoaPods/CocoaPods-packager/blob/master/lib/CocoaPods-packager/mangle.rb" target="_blank" rel="noopener">mangle.rb</a>文件中可以窥探一二：</p>
+<figure class="highlight ruby"><table><tr><td class="code"><pre><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># performs symbol aliasing</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># for each dependency:</span></span><br><span class="line"><span class="comment"># 	- determine symbols for classes and global constants</span></span><br><span class="line"><span class="comment"># 	- alias each symbol to Pod#&#123;pod_name&#125;_#&#123;symbol&#125;</span></span><br><span class="line"><span class="comment"># 	- put defines into `GCC_PREPROCESSOR_DEFINITIONS` for passing to Xcode</span></span><br><span class="line"><span class="comment">#</span></span><br></pre></td></tr></table></figure>
+<p>注释里写的很清楚了，Name-Mangling会把类名和全局常量改成<code>Pod#{pod_name}_#{symbol}</code>的形式，比如说我们的pod库YourPodName中有一个YourClass类，那它最终会被改成<code>PodYourPodName_YourClass</code>。</p>
+<p>需要注意的是Name-Mangling并不会改方法名，也就是说如果我们引入的第三方库给系统类比如UIImage增加了分类方法，而恰巧接入方的源码中也引入了这个第三方库，给UIImage增加同样名称的分类方法，由于分类的特性我们可以知道他们不会冲突，而是会产生覆盖，一般来说也不会有问题。</p>
+<p>但是如果两边引入的第三方库的版本不同，分类方法的实现也有所不同，那这就可能会产生问题。不过分类的实现一般比较固定，出现这种情况的概率比较小。</p>
+<h3 id="sdk中引入静态库">SDK中引入静态库</h3>
+<p>我们私有pod库中要引入静态库很简单，只需要在podspec文件中配置好静态库的路径<code>s.vendored_libraries = 'YourLibrayPath/*.a'</code>，并把静态库的头文件加入到源码路径中<code>s.source_files = 'YourPodName/Classes/**/*'</code>，执行<code>pod install</code>就可以正常使用了。</p>
+<p>但是如果这个静态库比较复杂，比如说gmssl，他里面包含两个静态库和几十上百个头文件，事情就变得比较棘手了，如下图所示：</p>
+<img src="/2019/03/13/sdk-development/gmssl.png">
+<p>主要问题在与这些个头文件之间是用尖括号<code>&lt;&gt;</code>以模块的形式引入的，比如：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;openssl/e_os2.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;openssl/opensslconf.h&gt;</span></span></span><br></pre></td></tr></table></figure>
+<p>这里就涉及到一个头文件的搜索路径的问题，如果我们直接把这些头文件加入到项目当中去就会报找不到头文件的异常。我们可以手动把他们都改成双引号的形式:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"e_os2.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opensslconf.h"</span></span></span><br></pre></td></tr></table></figure>
+<p>这种办法虽然可以解决问题，但是几十个文件改起来也不是件轻松的事情。更简单的办法是在<code>Pods.xcodeproj</code>文件的<code>Build Settings</code>中设置<code>Header Search Paths</code>，让它指向openssl所在的文件夹。<code>Pods.xcodeproj</code>中的设置在每次执行<code>pod install</code>之后都会被重置，这个时候我们上面提到的在podspec文件中设置<code>s.xcconfig = { "HEADER_SEARCH_PATHS" =&gt; "${PODS_ROOT}/../../Library/gmssl"}</code>就排上用场了。</p>
+<p>通过这种方式引入的静态库在我们的Demo project下是可以正常运行的，但是一旦用CocoaPods Packager打包还是会报找不到静态库头文件的异常。这个问题我暂时知道的唯一的解决办法就是上面提到的直接把头文件中的互相引用改成双引号的形式。</p>
+<p>假如你被逼的没办法手动或者写程序改完了这几十号头文件，那么你可以满怀期待的用我们上面提到的命令来打包了:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod package YourPodName.podspec --force --library</span><br></pre></td></tr></table></figure>
+<p>然而你又会收到另一条错误提示<code>[!] podspec has binary-only depedencies, mangling not possible.</code>，没错，Name-Mangling无法对静态库生效，我们只能暂时先选择不使用它:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod package YourPodName.podspec --force --library --no-mangle</span><br></pre></td></tr></table></figure>
+<p>这下终于可以打包成功了！</p>
+<p>但是...你会发现最终生成的静态库文件会包含我们引入的第三方静态库，即便你使用了<code>--exclude-deps</code>参数，它也只会去除我们引入的第三方开源库，静态库还是会被打包进去。那如果接入方也引入了这个第三方静态库，不还是会冲突？</p>
+<p>What the f**k!!!</p>
+<p>看来这条路是走不通了...</p>
+<p>最终我们还是得回到Xcode上来...</p>
+<h2 id="使用xcode打包静态库">使用Xcode打包静态库</h2>
+<p>在我们的Demo project里面新增一个名为YourPodName的Library类型的Target，或者你重新建一个新的Library类型的项目，然后把我们pod库中的源文件都加进这个新的target，就像下面这样:</p>
+<img src="/2019/03/13/sdk-development/target.png">
+<p>修改一下<code>Build Settings</code>里的配置：</p>
+<ol type="1">
+<li><p>设置Supported Platforms为iOS</p></li>
+<li><p>在Valid Architectures中添加<code>armv7</code>、<code>armv7s</code>、<code>arm64</code>、<code>arm64e</code>、<code>x86_64</code>等常用的架构</p></li>
+<li><p>手动设置<code>Header Search Paths</code>和<code>Library Search Paths</code>以引入第三方静态库。</p></li>
+</ol>
+<p>不要忘记在Podfile当中新增下面的代码来让新的Target可以正常引入我们依赖的第三方开源库:</p>
+<figure class="highlight ruby"><table><tr><td class="code"><pre><span class="line">target <span class="string">'SmartPay'</span> <span class="keyword">do</span></span><br><span class="line">  pod <span class="string">'第三方开源库'</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>然后执行<code>pod install</code>，你会发现CocoaPods在<code>Framework Search Paths</code>里面自动添加了类似<code>"/build/Debug/AFNetworking"</code>这样的路径，这个就是我们通过CocoaPods引入的第三方开源库最终编译成的framework的路径。</p>
+<p>点击运行之后就会生成最终的静态库。这里生成的静态库是不会包含我们引入的第三方静态库和开源库的，所以在接入方接入我们的SDK的时候我们需要下面的这些东西:</p>
+<ol type="1">
+<li>SDK的静态库和头文件</li>
+<li>引入的第三方静态库和头文件</li>
+<li>CocoaPods生成的第三方开源库的.framework静态库（如果接入方项目中已经包含就不需要再引入了）</li>
+<li>引入的系统framework名称列表</li>
+</ol>
+<h3 id="合并静态库文件">合并静态库文件</h3>
+<p>我们可以在项目左侧Products文件夹下面亩看到一个名为libYourPodName的静态库文件。点击右键<code>Show in Finder</code>就可以在Finder中看到它。使用下面的命令可以查看它所包含的架构:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ lipo -info 静态库路径</span><br></pre></td></tr></table></figure>
+<p>如果你运行的时候选择的是模拟器，它就只包含x86_64架构，如果你选择的是Generic iOS Device，那么它会包含我们上面设置的arm架构。</p>
+<p>对外我们可以把模拟器版和真机版的静态库分别输出或者使用下面的命令将他们合并成一个方便使用:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ lipo -create 静态库1路径 静态库2路径 -output 新静态库路径</span><br></pre></td></tr></table></figure>
+<h3 id="接入sdk注意点">接入SDK注意点</h3>
+<p>接入方接入我们的SDK就跟我们接入别人的静态库一样，除了需要在<code>Build Settings</code>中设置<code>Header Search Paths</code>和<code>Library Search Paths</code>以外还需要在<code>Build Phases</code>中的<code>Link Binary With Libraries</code>中添加我们SDK中引入的系统的framework。</p>
+<p>然后把我们提供给他们的第三方开源库的静态framework拖入项目当中，这步操作就会把这些framework自动加入到<code>Build Phases</code>中的<code>Link Binary With Libraries</code>中去。这样还不够，因为这些第三方开源库是披着framework外衣的静态库，并不能像系统库那样动态链接。所以我们得在<code>General</code>中的<code>Embedded Binaries</code>中加入这些framework，这样他们就会像.a静态库一样内嵌到ipa当中去。</p>
+<p>经过上面这些设置，项目已经可以正常运行了，但是在调用我们SDK中的分类方法时还是会报找不到Selector的错误，导致崩溃。</p>
+<p>对于这个问题，只需要在<code>Build Settings</code>中的<code>Other Linker Flags</code>中添加<code>-ObjC</code>标志就可以了。</p>
+<h3 id="objc标志的作用">-ObjC标志的作用</h3>
+<p>Objective-C没有为每个函数（或者方法）定义链接符号，它只为每个类创建链接符号。这样当在一个静态库中使用类别来扩展已有类的时候，链接器不知道如何把类原有的方法和类别中的方法整合起来，就会导致你调用类别中的方法时，出现”selector not recognized”，也就是找不到方法定义的错误。为了解决这个问题，引入了-ObjC标志，它的作用就是让链接器将静态库中所有的Objective-C的代码都链接进来。</p>
+<p>在64位的Mac系统或者iOS系统下，链接器有一个bug，会导致只包含有类别的静态库无法使用-ObjC标志来链接Objective-C代码。解决方法是使用-all_load 或者-force_load标志，它们的作用都是链接静态库中所有代码，不过all_load作用于所有的库，而-force_load后面必须要指定具体的文件。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;我们在使用第三方库的时候一般有三种接入方式：&lt;/p&gt;
+&lt;ol type=&quot;1&quot;&gt;
+&lt;li&gt;直接把第三方库的源码拖入工程&lt;/li&gt;
+&lt;li&gt;通过CocoaPods等包管理工具进行引入&lt;/li&gt;
+&lt;li&gt;通过.a或者.framework静态库引入&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;前
+    
+    </summary>
+    
+    
+      <category term="iOS" scheme="http://skx926.me/tags/iOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>OpenGL学习笔记（三）：向量、矩阵和变换</title>
+    <link href="http://skx926.me/2019/03/07/opengl-transform/"/>
+    <id>http://skx926.me/2019/03/07/opengl-transform/</id>
+    <published>2019-03-07T03:38:21.000Z</published>
+    <updated>2020-03-21T04:26:05.499Z</updated>
+    
+    <content type="html"><![CDATA[<p><a href="http://ky1e.me/2018/09/05/28.mac-glfw/" target="_blank" rel="noopener">OpenGL学习笔记（一）：在Mac上编译GLFW并配置到Xcode项目</a></p>
+<h2 id="向量">向量</h2>
+<p>向量最基本的定义就是一个方向。或者更正式的说，向量有一个方向(Direction)和大小(Magnitude，也叫做强度或长度)。如果一个向量有2个维度，它表示一个平面的方向，当它有3个维度的时候它可以表达一个3D世界的方向。</p>
+<p>下面你会看到3个向量，每个向量在2D图像中都用一个箭头<span class="math inline">\((x, y)\)</span>表示。我们在2D图片中展示这些向量，因为这样子会更直观一点。你可以把这些2D向量当做z坐标为0的3D向量。由于向量表示的是方向，起始于何处并不会改变它的值。下图我们可以看到向量<span class="math inline">\(\bar{v}\)</span>和<span class="math inline">\(\bar{w}\)</span>是相等的，尽管他们的起始点不同：</p>
+<img src="/2019/03/07/opengl-transform/vectors.png">
+<p>用公式表示就是这样：<span class="math inline">\(\bar{v} = \begin{pmatrix} \color{red}x \\ \color{green}y \\ \color{blue}z \end{pmatrix}\)</span></p>
+<p>由于向量是一个方向，所以有些时候会很难形象地将它们用位置(Position)表示出来。为了让其更为直观，我们通常设定这个方向的原点为<span class="math inline">\((0, 0, 0)​\)</span>，然后指向一个方向，对应一个点，使其变为位置向量(Position Vector)（你也可以把起点设置为其他的点，然后说：这个向量从这个点起始指向另一个点）。比如说位置向量<span class="math inline">\((3, 5)​\)</span>在图像中的起点会是<span class="math inline">\((0, 0)​\)</span>，并会指向<span class="math inline">\((3, 5)​\)</span>。我们可以使用向量在2D或3D空间中表示方向与位置.</p>
+<h3 id="向量与标量的运算">向量与标量的运算</h3>
+<p>标量(Scalar)只是一个数字（或者说是仅有一个分量的向量）。当把一个向量加/减/乘/除一个标量，我们可以简单的把向量的每个分量分别进行该运算。对于加法来说会像这样:</p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}1 \\ \color{green}2 \\ \color{blue}3 \end{pmatrix} + x = \begin{pmatrix} \color{red}1 + x \\ \color{green}2 + x \\ \color{blue}3 + x \end{pmatrix}​\]</span></p>
+<h3 id="向量加减">向量加减</h3>
+<p>向量的加法可以被定义为是分量的(Component-wise)相加，即将一个向量中的每一个分量加上另一个向量的对应分量:</p>
+<p><span class="math display">\[\bar{v} = \begin{pmatrix} \color{red}1 \\ \color{green}2 \\ \color{blue}3 \end{pmatrix}, \bar{k} = \begin{pmatrix} \color{red}4 \\ \color{green}5 \\ \color{blue}6 \end{pmatrix} \rightarrow \bar{v} + \bar{k} = \begin{pmatrix} \color{red}1 + \color{red}4 \\ \color{green}2 + \color{green}5 \\ \color{blue}3 + \color{blue}6 \end{pmatrix} = \begin{pmatrix} \color{red}5 \\ \color{green}7 \\ \color{blue}9 \end{pmatrix}​\]</span></p>
+<img src="/2019/03/07/opengl-transform/vectors_addition.png">
+<h3 id="向量长度">向量长度</h3>
+<p>我们使用勾股定理(Pythagoras Theorem)来获取向量的长度(Length)/大小(Magnitude)。如果你把向量的x与y分量画出来，该向量会和x与y分量为边形成一个三角形:</p>
+<img src="/2019/03/07/opengl-transform/vectors_triangle.png">
+<p>因为两条边（x和y）是已知的，如果希望知道斜边<span class="math inline">\(\color{red}{\bar{v}}​\)</span>的长度，我们可以直接通过勾股定理来计算：</p>
+<p><span class="math display">\[||\color{red}{\bar{v}}|| = \sqrt{\color{green}x^2 + \color{blue}y^2}​\]</span></p>
+<p>有一个特殊类型的向量叫做单位向量(Unit Vector)。单位向量有一个特别的性质——它的长度是1。我们可以用任意向量的每个分量除以向量的长度得到它的单位向量<span class="math inline">\(\hat{n}\)</span></p>
+<p><span class="math display">\[\hat{n} = \frac{\bar{v}}{||\bar{v}||}​\]</span></p>
+<p>我们把这种方法叫做一个向量的标准化(Normalizing)。单位向量头上有一个^样子的记号。通常单位向量会变得很有用，特别是在我们只关心方向不关心长度的时候。</p>
+<h3 id="向量相乘">向量相乘</h3>
+<p>两个向量相乘是一种很奇怪的情况。普通的乘法在向量上是没有定义的，因为它在视觉上是没有意义的。但是在相乘的时候我们有两种特定情况可以选择：一个是点乘(Dot Product)，记作<span class="math inline">\(\bar{v} \cdot \bar{k}\)</span>，另一个是叉乘(Cross Product)，记作<span class="math inline">\(\bar{v} \times \bar{k}\)</span>。</p>
+<h4 id="点乘">点乘</h4>
+<p>两个向量的点乘等于它们的数乘结果乘以两个向量之间夹角的余弦值。可能听起来有点费解，我们来看一下公式：</p>
+<p><span class="math display">\[\bar{v} \cdot \bar{k} = ||\bar{v}|| \cdot ||\bar{k}|| \cdot \cos \theta\]</span></p>
+<p>它们之间的夹角记作<span class="math inline">\(\theta​\)</span>。为什么这很有用？想象如果<span class="math inline">\(\bar{v}​\)</span>和<span class="math inline">\(\bar{k}​\)</span>都是单位向量，它们的长度会等于1。这样公式会有效简化成：</p>
+<p><span class="math display">\[\bar{v} \cdot \bar{k} =1⋅1⋅cosθ=cosθ\]</span></p>
+<p>现在点积只定义了两个向量的夹角。你也许记得90度的余弦值是0，0度的余弦值是1。使用点乘可以很容易测试两个向量是否正交(Orthogonal)或平行（正交意味着两个向量互为直角）。</p>
+<p>也可以通过点乘的结果计算两个非单位向量的夹角，点乘的结果除以两个向量的长度之积，得到的结果就是夹角的余弦值，即<span class="math inline">\(cos\theta​\)</span>。</p>
+<p><span class="math display">\[\cos \theta = \frac{\bar{v} \cdot \bar{k}}{||\bar{v}|| \cdot ||\bar{k}||}​\]</span></p>
+<p>点乘是通过将对应分量逐个相乘，然后再把所得积相加来计算的。</p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}{0.6} \\ -\color{green}{0.8} \\ \color{blue}0 \end{pmatrix} \cdot \begin{pmatrix} \color{red}0 \\ \color{green}1 \\ \color{blue}0 \end{pmatrix} = (\color{red}{0.6} * \color{red}0) + (-\color{green}{0.8} * \color{green}1) + (\color{blue}0 * \color{blue}0) = -0.8\]</span></p>
+<h4 id="叉乘">叉乘</h4>
+<p>叉乘只在3D空间中有定义，它需要两个不平行向量作为输入，生成一个正交于两个输入向量的第三个向量。如果输入的两个向量也是正交的，那么叉乘之后将会产生3个互相正交的向量。</p>
+<img src="/2019/03/07/opengl-transform/vectors_crossproduct.png">
+<p>两个正交向量A和B叉积：</p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}{A_{x}} \\ \color{green}{A_{y}} \\ \color{blue}{A_{z}} \end{pmatrix} \times \begin{pmatrix} \color{red}{B_{x}} \\ \color{green}{B_{y}} \\ \color{blue}{B_{z}}  \end{pmatrix} = \begin{pmatrix} \color{green}{A_{y}} \cdot \color{blue}{B_{z}} - \color{blue}{A_{z}} \cdot \color{green}{B_{y}} \\ \color{blue}{A_{z}} \cdot \color{red}{B_{x}} - \color{red}{A_{x}} \cdot \color{blue}{B_{z}} \\ \color{red}{A_{x}} \cdot \color{green}{B_{y}} - \color{green}{A_{y}} \cdot \color{red}{B_{x}} \end{pmatrix}\]</span></p>
+<h2 id="矩阵">矩阵</h2>
+<p>简单来说矩阵就是一个矩形的数字、符号或表达式数组。矩阵中每一项叫做矩阵的元素(Element)。下面是一个2×3矩阵的例子：</p>
+<p><span class="math display">\[\begin{bmatrix} 1 &amp; 2 &amp; 3 \\ 4 &amp; 5 &amp; 6 \end{bmatrix}​\]</span></p>
+<p>矩阵可以通过<span class="math inline">\((i, j)\)</span>进行索引，i是行，j是列，这就是上面的矩阵叫做2×3矩阵的原因。</p>
+<h3 id="矩阵的加减">矩阵的加减</h3>
+<p>矩阵与标量之间的加减定义如下：</p>
+<p><span class="math display">\[\begin{bmatrix} 1 &amp; 2 \\ 3 &amp; 4 \end{bmatrix} + \color{green}3 = \begin{bmatrix} 1 + \color{green}3 &amp; 2 + \color{green}3 \\ 3 + \color{green}3 &amp; 4 + \color{green}3 \end{bmatrix} = \begin{bmatrix} 4 &amp; 5 \\ 6 &amp; 7 \end{bmatrix}​\]</span></p>
+<p>矩阵与矩阵之间的加减就是两个矩阵对应元素的加减运算，所以总体的规则和与标量运算是差不多的，只不过在相同索引下的元素才能进行运算。</p>
+<p><span class="math display">\[\begin{bmatrix} \color{red}4 &amp; \color{red}2 \\ \color{green}1 &amp; \color{green}6 \end{bmatrix} - \begin{bmatrix} \color{red}2 &amp; \color{red}4 \\ \color{green}0 &amp; \color{green}1 \end{bmatrix} = \begin{bmatrix} \color{red}4 - \color{red}2 &amp; \color{red}2  - \color{red}4 \\ \color{green}1 - \color{green}0 &amp; \color{green}6 - \color{green}1 \end{bmatrix} = \begin{bmatrix} \color{red}2 &amp; -\color{red}2 \\ \color{green}1 &amp; \color{green}5 \end{bmatrix}​\]</span></p>
+<h3 id="矩阵的数乘">矩阵的数乘</h3>
+<p>和矩阵与标量的加减一样，矩阵与标量之间的乘法也是矩阵的每一个元素分别乘以该标量。</p>
+<p><span class="math display">\[\color{green}2 \cdot \begin{bmatrix} 1 &amp; 2 \\ 3 &amp; 4 \end{bmatrix} = \begin{bmatrix} \color{green}2 \cdot 1 &amp; \color{green}2 \cdot 2 \\ \color{green}2 \cdot 3 &amp; \color{green}2 \cdot 4 \end{bmatrix} = \begin{bmatrix} 2 &amp; 4 \\ 6 &amp; 8 \end{bmatrix}​\]</span></p>
+<h3 id="矩阵相乘">矩阵相乘</h3>
+<p>矩阵相乘有一些限制：</p>
+<ol type="1">
+<li><p>只有当左侧矩阵的列数与右侧矩阵的行数相等，两个矩阵才能相乘。</p></li>
+<li><p>矩阵相乘不遵守交换律(Commutative)，也就是说<span class="math inline">\(A \cdot B \neq B \cdot A​\)</span>。</p></li>
+</ol>
+<p><span class="math display">\[\begin{bmatrix} \color{red}1 &amp; \color{red}2 \\ \color{green}3 &amp; \color{green}4 \end{bmatrix} \cdot \begin{bmatrix} \color{blue}5 &amp; \color{purple}6 \\ \color{blue}7 &amp; \color{purple}8 \end{bmatrix} = \begin{bmatrix} \color{red}1 \cdot \color{blue}5 + \color{red}2 \cdot \color{blue}7 &amp; \color{red}1 \cdot \color{purple}6 + \color{red}2 \cdot \color{purple}8 \\ \color{green}3 \cdot \color{blue}5 + \color{green}4 \cdot \color{blue}7 &amp; \color{green}3 \cdot \color{purple}6 + \color{green}4 \cdot \color{purple}8 \end{bmatrix} = \begin{bmatrix} 19 &amp; 22 \\ 43 &amp; 50 \end{bmatrix}\]</span></p>
+<p>矩阵的乘法是一系列乘法和加法组合的结果，它使用到了左侧矩阵的行和右侧矩阵的列。</p>
+<img src="/2019/03/07/opengl-transform/matrix_multiplication.png">
+<p>结果矩阵的维度是(n, m)，n等于左侧矩阵的行数，m等于右侧矩阵的列数。</p>
+<p><span class="math display">\[\begin{bmatrix} \color{red}4 &amp; \color{red}2 &amp; \color{red}0 \\ \color{green}0 &amp; \color{green}8 &amp; \color{green}1 \\ \color{blue}0 &amp; \color{blue}1 &amp; \color{blue}0 \end{bmatrix} \cdot \begin{bmatrix} \color{red}4 &amp; \color{green}2 &amp; \color{blue}1 \\ \color{red}2 &amp; \color{green}0 &amp; \color{blue}4 \\ \color{red}9 &amp; \color{green}4 &amp; \color{blue}2 \end{bmatrix} = \begin{bmatrix} \color{red}4 \cdot \color{red}4 + \color{red}2 \cdot \color{red}2 + \color{red}0 \cdot \color{red}9 &amp; \color{red}4 \cdot \color{green}2 + \color{red}2 \cdot \color{green}0 + \color{red}0 \cdot \color{green}4 &amp; \color{red}4 \cdot \color{blue}1 + \color{red}2 \cdot \color{blue}4 + \color{red}0 \cdot \color{blue}2 \\ \color{green}0 \cdot \color{red}4 + \color{green}8 \cdot \color{red}2 + \color{green}1 \cdot \color{red}9 &amp; \color{green}0 \cdot \color{green}2 + \color{green}8 \cdot \color{green}0 + \color{green}1 \cdot \color{green}4 &amp; \color{green}0 \cdot \color{blue}1 + \color{green}8 \cdot \color{blue}4 + \color{green}1 \cdot \color{blue}2 \\ \color{blue}0 \cdot \color{red}4 + \color{blue}1 \cdot \color{red}2 + \color{blue}0 \cdot \color{red}9 &amp; \color{blue}0 \cdot \color{green}2 + \color{blue}1 \cdot \color{green}0 + \color{blue}0 \cdot \color{green}4 &amp; \color{blue}0 \cdot \color{blue}1 + \color{blue}1 \cdot \color{blue}4 + \color{blue}0 \cdot \color{blue}2 \end{bmatrix}   \\ = \begin{bmatrix} 20 &amp; 8 &amp; 12 \\ 25 &amp; 4 &amp; 34 \\ 2 &amp; 0 &amp; 4 \end{bmatrix}\]</span></p>
+<h2 id="向量与矩阵相乘">向量与矩阵相乘</h2>
+<p>前面我们把向量表示成这种形式<span class="math inline">\(\begin{pmatrix} \color{red}x \\ \color{green}y \\ \color{blue}z \end{pmatrix}\)</span>，这种情况下它其实就是一个<strong>N×1</strong>矩阵，N表示向量分量的个数。我们也可以把它表示成一个<strong>1×N</strong>的矩阵，也就是这样​<span class="math inline">\(\begin{pmatrix} \color{red}x &amp; \color{green}y &amp; \color{blue}z \end{pmatrix}\)</span></p>
+<p>如果我们有一个<strong>N×N</strong>矩阵，我们可以用我们的<strong>1×N</strong>向量乘以这个矩阵，因为这个矩阵的行数等于向量的列数，所以最终得到的结果也是一个<strong>1×N</strong>的矩阵，这就相当于是给向量做了一个变换。</p>
+<h3 id="单位矩阵">单位矩阵</h3>
+<p>单位矩阵是一个除了对角线以外都是0的<strong>N×N</strong>矩阵。在下式中可以看到，这种变换矩使一个向量完全不变：</p>
+<p><span class="math display">\[\begin{pmatrix} a &amp; b &amp; c &amp; d \end{pmatrix} \cdot \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix}  = \begin{bmatrix} \color{red}1 \cdot a &amp; \color{green}1 \cdot b &amp; \color{blue}1 \cdot c &amp; \color{purple}1 \cdot d \end{bmatrix} = \begin{pmatrix} a &amp; b &amp; c &amp; d \end{pmatrix}\]</span></p>
+<h3 id="缩放">缩放</h3>
+<p>对一个向量进行缩放(Scaling)就是对向量的长度进行缩放，而保持它的方向不变。由于我们进行的是2维或3维操作，我们可以分别定义一个有2或3个缩放变量的向量，每个变量缩放一个轴(x、y或z)。</p>
+<p>我们先来尝试缩放向量<span class="math inline">\(\color{red}{\bar{v}} = (3,2)\)</span>。我们可以把向量沿着x轴缩放0.5，使它的宽度缩小为原来的二分之一；我们将沿着y轴把向量的高度缩放为原来的两倍。我们看看把向量缩放(0.5, 2)倍所获得的<span class="math inline">\(\color{blue}{\bar{s}}\)</span>是什么样的：</p>
+<img src="/2019/03/07/opengl-transform/vectors_scale.png">
+<p>OpenGL通常是在3D空间进行操作的，对于2D的情况我们可以把z轴缩放1倍，这样z轴的值就不变了。我们刚刚的缩放操作是不均匀(Non-uniform)缩放，因为每个轴的缩放因子(Scaling Factor)都不一样。如果每个轴的缩放因子都一样那么就叫均匀缩放(Uniform Scale)。</p>
+<p>我们下面会构造一个变换矩阵来为我们提供缩放功能。我们从单位矩阵了解到，每个对角线元素会分别与向量的对应元素相乘。如果我们把1变为3会怎样？这样子的话，我们就把向量的每个元素乘以3了，这事实上就把向量缩放3倍。如果我们把缩放变量表示为<span class="math inline">\((\color{red}{S_1}, \color{green}{S_2}, \color{blue}{S_3})\)</span>可以为任意向量<span class="math inline">\((x,y,z)\)</span>定义一个缩放矩阵：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z  \end{pmatrix} \cdot \begin{bmatrix} \color{red}{S_1} &amp; \color{green}0 &amp; \color{blue}0  \\ \color{red}0 &amp; \color{green}{S_2} &amp; \color{blue}0  \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}{S_3}   \end{bmatrix}  = \begin{pmatrix} \color{red}{S_1} \cdot x &amp; \color{green}{S_2} \cdot y &amp; \color{blue}{S_3} \cdot z  \end{pmatrix}​\]</span></p>
+<h3 id="位移">位移</h3>
+<p>位移(Translation)是在原始向量的基础上加上另一个向量从而获得一个在不同位置的新向量的过程，从而在位移向量基础上移动了原始向量。</p>
+<p>和缩放矩阵一样，在4×4矩阵上有几个特别的位置用来执行特定的操作，对于位移来说它们是第四列最上面的3个值。如果我们把位移向量表示为<span class="math inline">\((\color{red}{T_x},\color{green}{T_y},\color{blue}{T_z})​\)</span>，我们就能把位移矩阵定义为：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; w \end{pmatrix} \cdot \begin{bmatrix}  \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}{0} \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}{0} \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}{0} \\ \color{red}{T_x} &amp; \color{green}{T_y} &amp; \color{blue}{T_z} &amp; \color{purple}1 \end{bmatrix}  = \begin{pmatrix} x + \color{red}{T_x} &amp; y + \color{green}{T_y} &amp; z + \color{blue}{T_z} &amp; w \end{pmatrix}\]</span></p>
+<p>这样是能工作的，因为所有的位移值都要乘以向量的<strong>w</strong>行，所以位移值会加到向量的原始值上（想想矩阵乘法法则）。而如果你用3x3矩阵我们的位移值就没地方放也没地方乘了，所以是不行的。</p>
+<blockquote>
+<p><strong>齐次坐标(Homogeneous Coordinates)</strong></p>
+<p>向量的w分量也叫齐次坐标。想要从齐次向量得到3D向量，我们可以把x、y和z坐标分别除以w坐标。我们通常不会注意这个问题，因为w分量通常是1.0。使用齐次坐标有几点好处：它允许我们在3D向量上进行位移（如果没有w分量我们是不能位移向量的）。</p>
+</blockquote>
+<h3 id="旋转">旋转</h3>
+<p>首先我们来定义一个向量的旋转到底是什么。下图中展示的2D向量<span class="math inline">\(\bar{v}​\)</span>是由<span class="math inline">\(\bar{k}​\)</span>向右旋转72度所得的：</p>
+<img src="/2019/03/07/opengl-transform/vectors_angle.png">
+<p>在3D空间中旋转需要定义一个角和一个旋转轴(Rotation Axis)。物体会沿着给定的旋转轴旋转特定角度。如果你想要更形象化的感受，可以试试向下看着一个特定的旋转轴，同时将你的头部旋转一定角度。当2D向量在3D空间中旋转时，我们把旋转轴设为z轴（尝试想象这种情况）。</p>
+<p>沿x轴旋转：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot  \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}{\cos \theta} &amp; \color{blue}{\sin \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; -\color{green}{\sin \theta} &amp; \color{blue}{\cos \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{pmatrix} x &amp; \color{green}{\cos \theta} \cdot y - \color{green}{\sin \theta} \cdot z &amp; \color{blue}{\sin \theta} \cdot y + \color{blue}{\cos \theta} \cdot z &amp; 1 \end{pmatrix}​\]</span></p>
+<p>沿y轴旋转：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp;z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} \color{red}{\cos \theta} &amp; \color{green}0 &amp; -\color{blue}{\sin \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\  \color{red}{\sin \theta} &amp; \color{green}0 &amp; \color{blue}{\cos \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{pmatrix} \color{red}{\cos \theta} \cdot x + \color{red}{\sin \theta} \cdot z &amp; y &amp;- \color{blue}{\sin \theta} \cdot x + \color{blue}{\cos \theta} \cdot z &amp; 1 \end{pmatrix}​\]</span></p>
+<p>沿z轴旋转：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} \color{red}{\cos \theta} &amp;  \color{green}{\sin \theta} &amp; \color{blue}0 &amp; \color{purple}0 \\ - \color{red}{\sin \theta} &amp; \color{green}{\cos \theta} &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{pmatrix} \color{red}{\cos \theta} \cdot x - \color{red}{\sin \theta} \cdot y  &amp; \color{green}{\sin \theta} \cdot x + \color{green}{\cos \theta} \cdot y &amp; z &amp; 1 \end{pmatrix}​\]</span></p>
+<p>对于3D空间中的旋转，一个更好的模型是沿着任意的一个轴，比如单位向量<span class="math inline">\((0.662, 0.2, 0.7222)​\)</span>旋转，而不是对一系列旋转矩阵进行复合。这样的一个（超级麻烦的）矩阵是存在的，见下面这个公式，其中<span class="math inline">\((\color{red}{R_x}, \color{green}{R_y}, \color{blue}{R_z})​\)</span>代表任意旋转轴：</p>
+<p><span class="math display">\[\begin{bmatrix} \cos \theta + \color{red}{R_x}^2(1 - \cos \theta) &amp; \color{green}{R_y}\color{red}{R_x} (1 - \cos \theta) + \color{blue}{R_z} \sin \theta  &amp; \color{blue}{R_z}\color{red}{R_x}(1 - \cos \theta) - \color{green}{R_y} \sin \theta &amp; 0 \\ \color{red}{R_x}\color{green}{R_y}(1 - \cos \theta) - \color{blue}{R_z} \sin \theta &amp; \cos \theta + \color{green}{R_y}^2(1 - \cos \theta) &amp; \color{blue}{R_z}\color{green}{R_y}(1 - \cos \theta) + \color{red}{R_x} \sin \theta  &amp; 0 \\ \color{red}{R_x}\color{blue}{R_z}(1 - \cos \theta) + \color{green}{R_y} \sin \theta &amp; \color{green}{R_y}\color{blue}{R_z}(1 - \cos \theta) - \color{red}{R_x} \sin \theta&amp; \cos \theta + \color{blue}{R_z}^2(1 - \cos \theta) &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 1 \end{bmatrix}​\]</span></p>
+<h3 id="矩阵的组合">矩阵的组合</h3>
+<p>使用矩阵进行变换的真正力量在于，根据矩阵之间的乘法，我们可以把多个变换组合到一个矩阵中。让我们看看我们是否能生成一个变换矩阵，让它组合多个变换。假设我们有一个顶点(x, y, z)，我们希望将其缩放2倍，然后位移<span class="math inline">\((1, 2, 3)\)</span>个单位。我们需要一个位移和缩放矩阵来完成这些变换。结果的变换矩阵看起来像这样：</p>
+<p><span class="math display">\[Trans = \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} \cdot \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix} = \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix}​\]</span></p>
+<p><span class="math display">\[Trans&#39; = \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix} \cdot \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}2 &amp; \color{green}4 &amp; \color{blue}6 &amp; \color{purple}1 \end{bmatrix}​\]</span></p>
+<p>注意，当矩阵相乘时我们先写位移再写缩放变换的。矩阵乘法是不遵守交换律的，这意味着它们的顺序很重要。建议您在组合矩阵时，先进行缩放操作，然后是旋转，最后才是位移，否则它们会互相影响。比如，如果你先位移再缩放，位移的向量也会同样被缩放。</p>
+<p>用最终的变换矩阵乘以我们的向量会得到以下结果：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix}  = \begin{pmatrix} \color{red}2x + \color{red}1 &amp; \color{green}2y + \color{green}2  &amp; \color{blue}2z + \color{blue}3 &amp; 1 \end{pmatrix}\]</span></p>
+<h2 id="catransform3d">CATransform3D</h2>
+<p>我们可以在<code>&lt;QuartzCore/CATransform3D.h&gt;</code>中看到CATransform3D的定义：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">struct</span> CATransform3D</span><br><span class="line">&#123;</span><br><span class="line">  CGFloat m11, m12, m13, m14;</span><br><span class="line">  CGFloat m21, m22, m23, m24;</span><br><span class="line">  CGFloat m31, m32, m33, m34;</span><br><span class="line">  CGFloat m41, m42, m43, m44;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这个结构体对应的是这样一个4x4的变换矩阵：</p>
+<p><span class="math display">\[\begin{bmatrix} m_{11} &amp; m_{12} &amp; m_{13}&amp; m_{14} \\ m_{21}&amp; m_{22} &amp; m_{23} &amp; m_{24} \\ m_{31} &amp; m_{32} &amp; m_{33} &amp; m_{34} \\ m_{41} &amp; m_{42} &amp; m_{43} &amp; m_{44} \end{bmatrix}​\]</span></p>
+<p>坐标向量和变换矩阵的乘法为：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  \color{red}{m_{11}} &amp;\color{green}{m_{12}} &amp; \color{blue}{m_{13}} &amp; \color{purple}{m_{14}} \\  \color{red}{m_{21}}&amp; \color{green}{m_{22}} &amp; \color{blue}{m_{23}} &amp; \color{purple}{m_{24}} \\  \color{red}{m_{31}} &amp; \color{green}{m_{32}} &amp; \color{blue}{m_{33}} &amp; \color{purple}{m_{34}} \\  \color{red}{m_{41}} &amp;\color{green}{m_{42}} &amp; \color{blue}{m_{43}} &amp; \color{purple}{m_{44}} \end{bmatrix} =​\]</span></p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}{m_{11}}x + \color{red}{m_{21}}y +\color{red}{m_{31}}z + \color{red}{m_{41}} &amp; \color{green}{m_{12}}x + \color{green}{m_{22}}y + \color{green}{m_{32}}z + \color{green}{m_{42}} &amp; \color{blue}{m_{13}}x +  \color{blue}{m_{23}}y + \color{blue}{m_{33}}z + \color{blue}{m_{43}} &amp; \color{purple}{m_{14}}x + \color{purple}{m_{24}}y + \color{purple}{m_{34}}z + \color{purple}{m_{44}} \end{pmatrix}\]</span></p>
+<h3 id="cgaffinetransform">CGAffineTransform</h3>
+<p>CGAffineTransform是用在2D中的变换矩阵，我们可以在<code>&lt;CoreGraphic/CGAffineTransform.h&gt;</code>中看到CGAffineTransform的定义：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">struct</span> CGAffineTransform &#123;</span><br><span class="line">  CGFloat a, b, c, d;</span><br><span class="line">  CGFloat tx, ty;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这个结构体对应的是这样一个3x3的变换矩阵：</p>
+<p><span class="math display">\[\begin{bmatrix} a &amp; b &amp; 0  \\ c &amp; d &amp; 0 \\ tx &amp; ty &amp; 1  \end{bmatrix}​\]</span></p>
+<p>坐标向量和变换矩阵的乘法为：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  a &amp; b &amp; 0 \\ c &amp; d &amp; 0 \\ tx &amp; ty &amp; 1 \end{bmatrix} = \begin{bmatrix}  x\cdot a + y \cdot c + tx &amp;  x \cdot b + y \cdot d + ty &amp; 1 \end{bmatrix}​\]</span></p>
+<p>缩放:</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1  \end{pmatrix} \cdot \begin{bmatrix}  sx &amp; 0 &amp; 0 \\ 0 &amp; sy &amp; 0 \\ 0 &amp; 0  &amp;1 \end{bmatrix} = \begin{bmatrix}  sx \cdot x  &amp;  sy \cdot y &amp; 1 \end{bmatrix}​\]</span></p>
+<h5 id="section"></h5>
+<p>位移:</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  1 &amp; 0 &amp; 0 \\ 0 &amp; 1 &amp; 0 \\ tx &amp; ty &amp; 1 \end{bmatrix} = \begin{bmatrix}  x + tx  &amp;  y + ty &amp; 1 \end{bmatrix}​\]</span></p>
+<p>旋转:</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  cos\theta &amp; sin\theta &amp; 0 \\ -sin\theta &amp; cos\theta &amp; 0 \\ 0 &amp; 0 &amp; 1 \end{bmatrix} = \begin{bmatrix}  cos\theta \cdot x - sin\theta \cdot y  &amp;  sin\theta \cdot x + cos\theta\cdot y&amp; 1 \end{bmatrix}\]</span></p>
+<h3 id="透视投影">透视投影</h3>
+<p>实际中你如果直接使用旋转，会注意到旋转前后，结果看起来竟然和普通的缩放一模一样，这是为什么呢？原因其实很简单，假如绕y轴旋转，空间中的图层虽然旋转了，但是显示到XoY平面（也就是iPhone的屏幕上）的时候，会把3D的物体进行正投影，这样子看上去就像是左右压缩一样</p>
+<p>而学过绘画的都知道人的视野并不是平行的，而是有一个透视图的概念，眼睛前有实际平行的两条线段发出（相当于z轴方向的向量），人眼看起来会相交于一点上（焦点，Focal point），这才产生了3D感。</p>
+<img src="/2019/03/07/opengl-transform/projection.png">
+<p>如何用变换矩阵实现透视投影呢？只需要修改一个值<span class="math inline">\(m_{34}\)</span>。为什么单单修改一个<span class="math inline">\(m_{34}\)</span>的值，就能达到这种透视3D的效果呢？</p>
+<p>Core Animation已经定义了焦点的x,y坐标，就是这个图层的anchorPoint（锚点），同时取z=0的XoY平面作为图像平面（也就是iPhone的屏幕平面），那么假如我希望焦点到图像平面的距离是d，可以假设焦点坐标为(0,0,d)，现在对m34的值进行赋值为w，初始向量坐标为<span class="math inline">\((x,y,z)\)</span>，开始推导：</p>
+<p>矩阵乘法：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} 1 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 1 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 1 &amp; w \\ 0 &amp; 0 &amp; 0 &amp; 1 \end{bmatrix}  = \begin{pmatrix} x &amp; y &amp; z &amp; zw+1 \end{pmatrix}​\]</span></p>
+<p>此时得到的向量不为齐次，需要进行齐次化，得到真正的坐标：</p>
+<p><span class="math display">\[\begin{pmatrix} x&#39; &amp; y&#39; &amp; z&#39; &amp; 1 \end{pmatrix} = \begin{pmatrix} \frac{x}{zw+1} &amp; \frac{y}{zw+1} &amp; \frac{z}{zw+1} &amp; 1 \end{pmatrix}​\]</span></p>
+<p>最后对XoY平面进行投影，则最终看到的二维向量应该为:</p>
+<p><span class="math display">\[\begin{pmatrix} \frac{x}{zw+1} &amp; \frac{y}{zw+1} \end{pmatrix}\]</span></p>
+<p>现在考虑x轴的情况（y轴同理），我们知道真实三维空间的x坐标是x，现在得到透视投影下的x坐标是<span class="math inline">\(\frac{x}{zw+1}​\)</span></p>
+<p>为了得到d和w的关系，这里引用一幅图，绿色的点为原始点，红色的点为投影到XoY平面上的点，我们这里推导不需要管具体的值，只是为了更清晰地发现规律：</p>
+<img src="/2019/03/07/opengl-transform/projection_axis.jpg">
+<p>根据相似三角形原理我们可以得到</p>
+<p><span class="math display">\[|\frac{x}{zw+1} : x| = d : (|z| + d)​\]</span></p>
+<p>去绝对值号，且x!=0,z!=0，由图可得此处的z为负数，所以：</p>
+<p><span class="math display">\[\frac{1}{zw+1}  = \frac{d} {d - z}​\]</span></p>
+<p><span class="math display">\[zw+1 = 1 - \frac{z}d\]</span></p>
+<p><span class="math display">\[w = - \frac{1}d\]</span></p>
+<p>因此<span class="math inline">\(m_{34}​\)</span>的值就为<span class="math inline">\(- \frac{1}d​\)</span>，这里的<span class="math inline">\(d​\)</span>就是焦点距离，也就是人眼到手机屏幕的距离，一般取值在500~1000之间。默认初始变换矩阵的<span class="math inline">\(m_{34}​\)</span>是0，也就是说认为焦点无限远，因此看起来没有任何3D感。假如我们取d越大，则看起来越没有投射和3D感；取d越小，则3D感和失真感越强烈。</p>
+<p>参考文章：</p>
+<p><a href="https://learnopengl-cn.github.io/01%20Getting%20started/07%20Transformations/" target="_blank" rel="noopener">LearnOpenGL CN:变换</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/23359747" target="_blank" rel="noopener">Core Animation 3D 仿射变换知识</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;a href=&quot;http://ky1e.me/2018/09/05/28.mac-glfw/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OpenGL学习笔记（一）：在Mac上编译GLFW并配置到Xcode项目&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&quot;向量&quot;&gt;
+    
+    </summary>
+    
+    
+      <category term="Graphic" scheme="http://skx926.me/tags/Graphic/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Mac上的各种代理设置</title>
+    <link href="http://skx926.me/2019/01/23/mac-proxy/"/>
+    <id>http://skx926.me/2019/01/23/mac-proxy/</id>
+    <published>2019-01-23T03:31:53.000Z</published>
+    <updated>2020-03-21T04:26:05.434Z</updated>
+    
+    <content type="html"><![CDATA[<p>在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇<a href="http://skx926.github.io/2016/02/04/shadowsocks-server/" target="_blank" rel="noopener">文章</a>来教大家搭建自己的翻墙服务器，里面关于VPS推荐的部分已经过时了，但是操作步骤还是有用的。</p>
+<p>但是等你把一切都配置好之后你会发现似乎只有浏览器可以正常访问被屏蔽的网站，常用的一些服务比如git、ssh、npm、terminal、telegram等不是连接出错就是慢的要死，其实这些服务的数据其实根本没有经过我们的代理服务器，所以还是和原来一样。这是为什么呢？</p>
+<p>当我们启动了Shadowsocks客户端的时候，就设置了几个系统级别的环境变量比如<code>http_proxy</code>，浏览器在发送http请求的时候就会去检测这个环境变量是否存在，如果存在就会把请求数据包通过代理地址发送给本地的代理服务器，本地的代理服务器再把数据包发送给远程的代理服务器，然后再转发给真正的目的服务器。如下图所示：</p>
+<img src="/2019/01/23/mac-proxy/flow.png">
+<p>虽说这些个环境变量是全局的，但却不是强制的，应用程序可以决定是否使用这些个环境变量。所以实际情况是，除了浏览器以外的大多数应用<strong>都默认不会</strong>使用这些个环境变量。虽然默认不会使用代理环境变量，但是一般他们都会提供命令或者界面来进行代理的配置，我们后面会详细说一说常用的一些服务和应用配置代理的方式。</p>
+<h2 id="查看本地端口">查看本地端口</h2>
+<p>设置代理之前我们首先得知道本地代理服务监听的地址和端口。以<a href="https://github.com/shadowsocks/ShadowsocksX-NG" target="_blank" rel="noopener">ShadowsocksX-NG</a>为例，在它的偏好设置面板的高级选项可以看到本地socks5监听地址和端口：</p>
+<img src="/2019/01/23/mac-proxy/socks5.png">
+<p>我们可以看到socks5的地址和端口是<code>socks5://127.0.0.1:1086</code>。同样的，在HTTP选项可以看到HTTP代理地址和端口是<code>http://127.0.0.1:1087</code></p>
+<h2 id="设置代理">设置代理</h2>
+<h3 id="git">Git</h3>
+<p>其实给git设置代理的方法我之前已经写过一篇<a href="http://skx926.github.io/2017/01/15/git-proxy/" target="_blank" rel="noopener">文章</a>了，这里再说一下。</p>
+<p>设置http代理</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git config --global http.proxy socks5://127.0.0.1:1086</span><br></pre></td></tr></table></figure>
+<p>取消代理设置</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git config --global --unset http.proxy</span><br></pre></td></tr></table></figure>
+<p>对特定网址设置代理</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git config --global http.&lt;要设置代理的URL&gt;.proxy socks5://127.0.0.1:1086</span><br><span class="line">$ git config --global http.https://github.com.proxy socks5://127.0.0.1:1086</span><br></pre></td></tr></table></figure>
+<p>我们知道git除了支持http协议，还支持ssh协议。ssh协议代理配置有些不一样。</p>
+<h3 id="ssh">SSH</h3>
+<p>如果是单次ssh登录的时候使用代理，就可以用下面的命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ ssh username@host -o ProxyCommand=<span class="string">'nc -X 5 -x 127.0.0.1:1086 %h %p'</span></span><br></pre></td></tr></table></figure>
+<p>-X表示代理协议，5就表示的是socks5，所以端口号我们使用1086。</p>
+<p>当我们在git中使用ssh协议的时候，没办法采用上面的方法，但是可以通过修改ssh全局配置文件来达到目的。</p>
+<p>首先打开文件：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ vi ~/.ssh/config</span><br></pre></td></tr></table></figure>
+<p>然后把下面的内容添加进去并保存：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">Host *</span><br><span class="line">  ProxyCommand=nc -X 5 -x localhost:1086 %h %p</span><br></pre></td></tr></table></figure>
+<p>Host表示要访问地址，可以为不同的host配置不同的代理。这里用星号*表示不管是什么host都走这个代理。</p>
+<h3 id="cocoapods">CocoaPods</h3>
+<p>一般来说你设置了Git的代理之后，使用<code>pod install</code>、<code>pod update</code>命令都会没有问题，但是使用<code>pod repo update</code>的时候就会报如下的错误:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ pod repo update master --verbose</span><br><span class="line"></span><br><span class="line">Updating spec repo `master`</span><br><span class="line">[!] Failed to connect to GitHub to update the CocoaPods/Specs specs repo - Please check if you are offline, or that GitHub is down</span><br><span class="line"></span><br><span class="line">/Library/Ruby/Gems/2.3.0/gems/cocoapods-core-1.6.0.beta.2/lib/cocoapods-core/github.rb:105:in `rescue in modified_since_commit&apos;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>打开<code>/Library/Ruby/Gems/2.3.0/gems/cocoapods-core-1.6.0.beta.2/lib/cocoapods-core/github.rb</code>这个文件查看CocoaPods的源码之后就可以知道<code>pod repo update</code>命令使用git拉取<a href="https://github.com/CocoaPods/Specs" target="_blank" rel="noopener">Spec</a>之前会请求https://api.github.com，因此如果你无法直接访问github的话，就卡在这一步无法更新repo了，解决办法就是按照下面的方法先设置终端Terminal的代理，然后在使用<code>pod repo update</code>。</p>
+<h3 id="terminal">Terminal</h3>
+<p>其实我们上面说的不管是git还是npm，大多数情况下都是在终端里使用的，我们可以通过直接给终端设置代理来让这些在终端中进行的操作走代理。</p>
+<p>在终端中运行下面的命令就可以给终端设置临时代理：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">export</span> http_proxy=http://127.0.0.1:1087;<span class="built_in">export</span> https_proxy=http://127.0.0.1:1087;</span><br></pre></td></tr></table></figure>
+<p>同样的，要让终端下一次打开也能使用代理就需要修改配置文件。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ vi ~/.bash_profile</span><br></pre></td></tr></table></figure>
+<p>然后在其中加入下面两行内容并保存:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">export</span> http_proxy=http://127.0.0.1:1087</span><br><span class="line"><span class="built_in">export</span> https_proxy=http://127.0.0.1:1087</span><br></pre></td></tr></table></figure>
+<p>然后在运行下面的命令来让配置生效：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">source</span> ~/.bash_profile</span><br></pre></td></tr></table></figure>
+<h3 id="npm">NPM</h3>
+<p>由于npm的默认源<code>https://registry.npmjs.org/</code>在天朝访问很慢，所以很多人都建议使用淘宝的镜像源<code>https://registry.npm.taobao.org/</code>，只需要使用下面的一行命令就可以完成:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ npm config <span class="built_in">set</span> registry https://registry.npm.taobao.org/</span><br></pre></td></tr></table></figure>
+<p>这种方式有时候还是会出现一些问题，我们也可以通过下面的命令给npm设置代理来加快访问速度:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ npm config <span class="built_in">set</span> proxy=http://127.0.0.1:1087</span><br></pre></td></tr></table></figure>
+<p>取消代理</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ npm config delete proxy</span><br></pre></td></tr></table></figure>
+<p>其实上面这两个命令其实都是在修改<code>~/.npmrc</code>文件，你也可以直接打开它进行查看和修改。</p>
+<h3 id="telegram">Telegram</h3>
+<p>相对于我们上面提到的这些程序，telegram不能通过命令来设置代理，而是通过用户界面来设置。</p>
+<p>当你第一次打开telegram并输入手机号进行登录的时候，由于还没有设置代理，它发起的登录请求肯定会失败。当请求失败之后会询问你要不是使用代理，我们点击<code>Use Proxy</code> -&gt; <code>Add Proxy</code>来添加一个socks5代理，然后填入地址和端口，用户名和密码留空就好了，如下图所示：</p>
+<img src="/2019/01/23/mac-proxy/telegram.png">
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇&lt;a href=&quot;http://skx926.github.io/2016/02/04/shadowsocks-server/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;文章&lt;/
+    
+    </summary>
+    
+    
+      <category term="macOS" scheme="http://skx926.me/tags/macOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>移动端H5页面选择图片的各种姿势</title>
+    <link href="http://skx926.me/2018/12/28/h5-image-picker/"/>
+    <id>http://skx926.me/2018/12/28/h5-image-picker/</id>
+    <published>2018-12-28T09:05:50.000Z</published>
+    <updated>2020-03-21T04:26:05.432Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="通过html的input标签调用系统api进行选择">通过HTML的<code>&lt;input&gt;</code>标签调用系统api进行选择</h2>
+<p>通过下面的代码就可以调用系统的api选择图片</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 选择文件 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 选择图片 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span> <span class="attr">accept</span>=<span class="string">'image/*'</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 选择多张图片 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span> <span class="attr">multiple</span> <span class="attr">accept</span>=<span class="string">'image/*'</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 拍照 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span> <span class="attr">capture</span>=<span class="string">'camera'</span> <span class="attr">accept</span>=<span class="string">'image/*'</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这种方式的优点就是使用简单，缺点也很明显：</p>
+<ul>
+<li>没有办法进行自定义的操作，比如说我们希望选择到的图片是压缩过的图片，而不是原图</li>
+<li>UI是系统默认的样式，不能自定义</li>
+</ul>
+<p>综上所述，我们伟大的产品经理美眉肯定是不会满足于系统的样式的，所以才有了下面的姿势</p>
+<h2 id="通过naitive端选择图片回传给h5">通过Naitive端选择图片回传给H5</h2>
+<p>这个姿势就涉及到Hybrid混合开发的框架了，现在很多App里面都有一套自己的Hybrid框架，关于这个东西，这里就不多说了，简而言之：就是h5页面通过jsbridge来和Native端进行交互，调用原生的一些能力。</p>
+<p>既然h5可以调用Native的能力了，那我们就可以在Native实现一个高度自定义的图片选择器，解决前一种姿势不候灵活的问题。</p>
+<p>这个姿势乍一看很完美，但是也有个很棘手的问题：由于iOS应用程序沙盒的限制，我们把本地图片路径回传给h5之后，h5其实是没有权限来访问这个路径的，当然也就拿不到图片的数据。</p>
+<p>要解决这个问题，有两套方案：</p>
+<ul>
+<li><p>方案一：Native端拿到图片之后将它上传到图片服务器，然后把图片的地址回传给h5，h5通过这个地址获取图片</p></li>
+<li><p>方案二：Native端拿到图片之后将图片数据转成base64的字符串，直接回传给h5</p></li>
+<li><p>方案三：Native端拿到图片之后虚拟出一个url scheme或者http地址回传给h5，h5在加载这个地址的时候Native端拦截这个请求，然后把图片数据作为请求的response进行返回</p>
+<img src="/2018/12/28/h5-image-picker/flow.png"></li>
+</ul>
+<p>对于方案一，我们应该都很熟悉。这个方案的优点就是用户的图片都会在服务端存储一份，对于做用户数据分析什么的有用；缺点也很明显：</p>
+<ol type="1">
+<li>需要Native端把图片上传到服务端，图片比较大、多，或者网络环境差的时候耗时会很久</li>
+<li>需要服务端资源的支持：包括技术人员、服务器等。数据量比较大的话服务器和带宽的开支会很大</li>
+<li>如果第三方h5需要将图片存储到自己的服务器，就需要先通过网络请求把图片又下载到本地再上传</li>
+</ol>
+<p>对于方案二，相对于其他两种方案，优点就是步骤简单，但是缺点很致命：由于我们h5和Native交互都采用的是json格式的字符串，安卓端使用的Google自家的<a href="https://github.com/google/gson" target="_blank" rel="noopener">Gson库</a>对于解析json文件的大小有所限制。如果要同时传几张原图的话，那数据的大小就得有几十MB，这个大小超过限制。再者，将图片的二进制数据转为base64的string，也有一定的性能损耗。</p>
+<p>对于方案三，缺点几乎没有，我们来说说它的优点：</p>
+<ol type="1">
+<li>Native拿到图片之后存储在沙盒里，速度快，不会涉及到服务端的任何东西</li>
+<li>第三方h5获取图片数据也是在应用内完成，不涉及网络，速度很快</li>
+<li>对于数据的大小没有限制，后期要扩展支持视频或者其他文件也很方便</li>
+</ol>
+<p>结果显而易见，我们最终采用了方案三，下面我们来说说方案三具体的实现。</p>
+<h4 id="保存图片到沙盒">保存图片到沙盒</h4>
+<p>我们使用自定义的图片选择器选择完成之后会拿到一个UIImage的数组，我们把这些图片进行压缩之后保存在<code>/tmp</code>文件夹里，这里需要注意给每张图片一个唯一的名称，而且为了和下次选择的图片名称不冲突，有个简单的办法就是用当前时间戳（iOS的时间戳是精确到毫秒的，没有人可以在1毫秒内选择两次图片），然后再拼一个图片的序列号，比如<code>1548918117.421-6.jpg</code>。</p>
+<h4 id="生成虚拟地址">生成虚拟地址</h4>
+<p>生成虚拟地址有两种方式，这两种方式的请求我们客户端都是可以拦截到并返回正确的数据的，但是h5使用起来的感受却是完全不同的。</p>
+<ol type="1">
+<li><p>自定义scheme：比如<code>shfile://1548918117.421-6.jpg</code></p></li>
+<li><p>自定义host：比如<code>https://custom-host/1548918117.421-6.jpg</code></p></li>
+</ol>
+<h4 id="h5加载图片">H5加载图片</h4>
+<p>如果h5只是使用<code>&lt;img&gt;</code>标签来展示选择到的图片的话，上面这两种方式没有任何区别。如果h5要获取到图片的数据上传自己的后台的话，第二种方式就可以通过<code>XMLHttpRequest</code>发起一个http请求就能获取到图片数据：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> request = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">request.open(<span class="string">'GET'</span>, file.path);</span><br><span class="line">request.responseType = <span class="string">'blob'</span>;</span><br><span class="line">request.onreadystatechange = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (request.readyState !== <span class="number">4</span>) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">if</span> (request.status == <span class="number">200</span>) &#123;</span><br><span class="line">        <span class="comment">// 拿到二进制图片数据</span></span><br><span class="line">        <span class="keyword">let</span> blob = request.response;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'下载失败'</span>);&#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">request.send();</span><br></pre></td></tr></table></figure>
+<p>而第一种方式就无法通过http请求来获取了，但是也是有办法获取的，我所知道的一种办法就是在<code>&lt;img&gt;</code>的<code>onload</code>方法中通过canvas重绘图片从而拿到图片数据:</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> image = <span class="keyword">new</span> Image();</span><br><span class="line">image.onload = <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> canvas = <span class="built_in">document</span>.createElement(<span class="string">'canvas'</span>);</span><br><span class="line">    canvas.width = <span class="keyword">this</span>.width;</span><br><span class="line">    canvas.height = <span class="keyword">this</span>.height;</span><br><span class="line">    <span class="keyword">let</span> ctx = canvas.getContext(<span class="string">'2d'</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 重绘</span></span><br><span class="line">    ctx.drawImage(<span class="keyword">this</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 拿到base64形式图片数据</span></span><br><span class="line">    <span class="keyword">let</span> dataURL = canvas.toDataURL(<span class="string">'image/png'</span>);</span><br><span class="line">&#125;</span><br><span class="line">image.src = <span class="string">'shfile://1548918117.421-6.jpg'</span>;</span><br></pre></td></tr></table></figure>
+<p>这种方式在请求加载获取图片之外还需要创建Image对象、创建canvas对象、重绘图片、base64转换等步骤，毫无疑问是很低效的，所以我们采用第二种方式。</p>
+<h4 id="通过nsurlprotocol拦截请求并返回数据">通过NSURLProtocol拦截请求并返回数据</h4>
+<p>关于NSURLProtocol，我在另一篇<a href="http://ky1e.me/2019/01/24/32.nsurlprotocol" target="_blank" rel="noopener">文章</a>中做了介绍，这里假设你已经知道它怎么用了。</p>
+<p>我们首先注册一个https的scheme，然后创建一个继承于<code>NSURLProtocol</code>的类，这个类的头文件和实现文件如下所示：</p>
+<p>CustomURLProtocol.h</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="built_in">NSString</span> * <span class="keyword">const</span> CustomInterceptHost = <span class="string">@"custom-host"</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">CustomURLProtocol</span> : <span class="title">NSURLProtocol</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>CustomURLProtocol.m</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">"CustomURLProtocol.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">CustomURLProtocol</span></span></span><br><span class="line"></span><br><span class="line">+ (<span class="built_in">BOOL</span>)canInitWithRequest:(<span class="built_in">NSURLRequest</span> *)request &#123;</span><br><span class="line">    <span class="comment">// 只拦截我们自定义host的请求</span></span><br><span class="line">    <span class="keyword">if</span> ([request.URL.host isEqualToString:CustomInterceptHost]) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="built_in">NSURLRequest</span> *)canonicalRequestForRequest:(<span class="built_in">NSURLRequest</span> *)request &#123;</span><br><span class="line">    <span class="keyword">return</span> request;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)startLoading &#123;</span><br><span class="line">    <span class="comment">// 获取链接中的图片名称</span></span><br><span class="line">    <span class="built_in">NSString</span> *name = <span class="keyword">self</span>.request.URL.lastPathComponent;</span><br><span class="line">    <span class="built_in">NSString</span> *filePath = [[<span class="keyword">self</span> directory] stringByAppendingString:name];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 设置请求头，解决跨域问题</span></span><br><span class="line">    <span class="built_in">NSMutableDictionary</span>&lt;<span class="built_in">NSString</span> *, <span class="built_in">NSString</span> *&gt; *headerFields = [<span class="built_in">NSMutableDictionary</span>&lt;<span class="built_in">NSString</span> *, <span class="built_in">NSString</span> *&gt; dictionary];</span><br><span class="line">    headerFields[<span class="string">@"Access-Control-Allow-Origin"</span>] = <span class="string">@"*"</span>;</span><br><span class="line">    headerFields[<span class="string">@"Access-Control-Allow-Headers"</span>] = <span class="string">@"Origin, X-Requested-With, Content-Type"</span>;</span><br><span class="line">    headerFields[<span class="string">@"Content-Type"</span>] = <span class="keyword">self</span>.request.allHTTPHeaderFields[<span class="string">@"Accept"</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 创建http响应请求</span></span><br><span class="line">    <span class="built_in">NSHTTPURLResponse</span> *httpResponse;</span><br><span class="line">    <span class="keyword">if</span> ([[<span class="built_in">NSFileManager</span> defaultManager] fileExistsAtPath:filePath]) &#123;</span><br><span class="line">        httpResponse = [[<span class="built_in">NSHTTPURLResponse</span> alloc] initWithURL:<span class="keyword">self</span>.request.URL statusCode:<span class="number">200</span> HTTPVersion:<span class="literal">nil</span> headerFields:headerFields];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        httpResponse = [[<span class="built_in">NSHTTPURLResponse</span> alloc] initWithURL:<span class="keyword">self</span>.request.URL statusCode:<span class="number">404</span> HTTPVersion:<span class="literal">nil</span> headerFields:headerFields];</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">NSData</span> *imageData = [<span class="built_in">NSData</span> dataWithContentsOfFile:filePath];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 响应请求</span></span><br><span class="line">    [<span class="keyword">self</span>.client URLProtocol:<span class="keyword">self</span> didReceiveResponse:httpResponse cacheStoragePolicy:<span class="built_in">NSURLCacheStorageNotAllowed</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 返回图片数据</span></span><br><span class="line">    [<span class="keyword">self</span>.client URLProtocol:<span class="keyword">self</span> didLoadData:imageData];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 结束响应</span></span><br><span class="line">    [<span class="keyword">self</span>.client URLProtocolDidFinishLoading:<span class="keyword">self</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)stopLoading &#123;</span><br><span class="line">    <span class="comment">// Do nothing.</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 图片存储路径</span></span><br><span class="line">- (<span class="built_in">NSString</span> *)directory &#123;</span><br><span class="line">    <span class="keyword">return</span> [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%@/tmp/"</span>, <span class="built_in">NSHomeDirectory</span>()];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>实现的逻辑比较简单，上面的代码里面我也做了注释，这里就不多讲了。</p>
+<p>以上就是移动端H5页面选择图片的各种姿势，不知道还有没有其他更好的姿势，如果有的话，还请在下面留言交流。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;通过html的input标签调用系统api进行选择&quot;&gt;通过HTML的&lt;code&gt;&amp;lt;input&amp;gt;&lt;/code&gt;标签调用系统api进行选择&lt;/h2&gt;
+&lt;p&gt;通过下面的代码就可以调用系统的api选择图片&lt;/p&gt;
+&lt;figure class=&quot;highligh
+    
+    </summary>
+    
+    
+      <category term="iOS" scheme="http://skx926.me/tags/iOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>删除macOS自带的英文输入法</title>
+    <link href="http://skx926.me/2018/10/19/remove-default-input-source/"/>
+    <id>http://skx926.me/2018/10/19/remove-default-input-source/</id>
+    <published>2018-10-19T06:22:25.000Z</published>
+    <updated>2020-03-21T04:26:05.517Z</updated>
+    
+    <content type="html"><![CDATA[<p>macOS自带的输入法支持的语言很多，但是词库不够丰富，所以我们一般都会安装搜狗输入法。</p>
+<p>搜狗输入法是支持中文和英文输入的，有时候我们处在英文状态，想要切换到中文。如果我们不查看状态栏的输入法状态的话很难判断当前是搜狗的英文输入法还是系统自带的英文输入法。这个时候我一般会直接尝试用快捷键进行切换。</p>
+<p>问题在于系统输入法切换的快捷键是<code>Option + Space</code>，而搜狗输入法中英文切换的快捷键是<code>Shift</code>，这样的话我们有一半的概率会需要这个快捷键都按才会切换到中文输入法。这样是很难受的。</p>
+<p>这种情况我们自然而然的就会想要在输入法管理器当中删掉系统自带的英文输入法。然而，系统并不允许我们这么做。</p>
+<img src="/2018/10/19/remove-default-input-source/gray.png">
+<p>其实细想一下系统这么设计也是合理的，如果我们一不小心把所有输入法都删除了，岂不是没办法用了？</p>
+<p>系统这么设计是合理的，因为设计者是美国人，他们当然无法体会我们的痛苦。我们要删掉也是合理的，因为每天都这么切来切去确实很痛苦！</p>
+<p>我记得在很早以前，大概是在macOS 10.6还是10.7吧，那个时候还可以删掉系统自带的输入法，方法很奇葩：先添加一下越南输入法，然后删掉英文输入法，最后再删掉越南输入法就可以了。</p>
+<p>后来系统升级之后这个方法就失效了。那还有什么办法呢？Here is the way：</p>
+<ol type="1">
+<li>在输入法管理器中删掉多余的输入法，只保留我们要用的搜狗输入法和自带的ABC输入法</li>
+<li>把当前输入法切换到ABC输入法</li>
+<li>把<code>~/Library/Preferences/</code>路径下的<code>com.apple.HIToolbox.plist</code>文件拷贝到桌面，然后用Xcode打开它，找到并删除<code>AppleEnabledInputSources</code>中<code>KeyboardLayout Name</code>为<code>ABC</code>的那一项，保存文件</li>
+</ol>
+<img src="/2018/10/19/remove-default-input-source/abc.png">
+<ol start="4" type="1">
+<li>用修改后的文件替换<code>~/Library/Preferences/</code>路径下文件</li>
+<li>重启电脑</li>
+</ol>
+<p>大功告成!</p>
+<img src="/2018/10/19/remove-default-input-source/removed.png">
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;macOS自带的输入法支持的语言很多，但是词库不够丰富，所以我们一般都会安装搜狗输入法。&lt;/p&gt;
+&lt;p&gt;搜狗输入法是支持中文和英文输入的，有时候我们处在英文状态，想要切换到中文。如果我们不查看状态栏的输入法状态的话很难判断当前是搜狗的英文输入法还是系统自带的英文输入法。这个
+    
+    </summary>
+    
+    
+      <category term="macOS" scheme="http://skx926.me/tags/macOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>OpenGL学习笔记（一）：在Mac上编译GLFW并配置到Xcode项目</title>
+    <link href="http://skx926.me/2018/09/05/mac-glfw/"/>
+    <id>http://skx926.me/2018/09/05/mac-glfw/</id>
+    <published>2018-09-05T03:58:11.000Z</published>
+    <updated>2020-03-21T04:26:05.434Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近准备通过 <a href="https://learnopengl-cn.github.io/" target="_blank" rel="noopener">LearnOpenGL</a> 来学习一下OpenGL，环境配置的教程里面使用的开发工具是 Windows 上的 Visual Studio，而我想使用 Mac 上的 Xcode，在这里记录一下配置的过程。</p>
+<h2 id="下载-glfw-源代码并安装-cmake">下载 GLFW 源代码并安装 CMake</h2>
+<p>首先在GLFW的官网下载源代码 <a href="http://www.glfw.org/" target="_blank" rel="noopener">http://www.glfw.org/</a>，然后在 CMake 官网下载 Mac 平台对应的安装包 <a href="https://cmake.org/download/" target="_blank" rel="noopener">https://cmake.org/download/</a></p>
+<p>我下载的是一个 dmg 格式的图形界面的安装包，在把 <code>CMake.app</code> 拖进 <code>/Applications</code> 文件夹之后没有办法直接在终端运行 <code>cmake</code> 命令，所以需要把 cmake 命令所对应的二进制文件的路径添加到环境变量中。</p>
+<p>打开 <code>~/.bash_profile</code> 环境变量配置文件，在末尾添加下面的内容:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">export</span> CMAKE_ROOT=/Applications/CMake.app/Contents/bin/</span><br><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$CMAKE_ROOT</span>:<span class="variable">$PATH</span></span><br></pre></td></tr></table></figure>
+<p>保存文件之后并不会立即生效，通过 <code>$ source ~/.bash_profile</code> 命令来让它立即生效。</p>
+<h2 id="编译-glfw-源代码">编译 GLFW 源代码</h2>
+<p>从终端进入到解压完成的 glfw 源代码的目录，依次运行下面的命令来进行编译:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ cmake .</span><br><span class="line">$ sudo make install</span><br></pre></td></tr></table></figure>
+<p>编译成功之后会出现下面的内容:</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">Install the project...</span><br><span class="line">-- Install configuration: <span class="string">""</span></span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/include/GLFW</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/include/GLFW/glfw3.h</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/include/GLFW/glfw3native.h</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/lib/cmake/glfw/glfw3Config.cmake</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/lib/cmake/glfw/glfw3ConfigVersion.cmake</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/lib/cmake/glfw/glfwTargets.cmake</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/lib/cmake/glfw/glfwTargets-noconfig.cmake</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/lib/pkgconfig/glfw3.pc</span><br><span class="line">-- Installing: /usr/<span class="built_in">local</span>/lib/libglfw3.a</span><br></pre></td></tr></table></figure>
+<h2 id="配置到-xcode-项目">配置到 Xcode 项目</h2>
+<p>从上面编译的结果可以知道 GLFW 编译后的头文件和静态链接库文件的位置:</p>
+<ul>
+<li>头文件 <code>/usr/local/include/GLFW</code></li>
+<li>静态链接库文件 <code>/usr/local/lib/libglfw3.a</code></li>
+</ul>
+<p>首先在Xcode项目的 <code>Build Settings</code> 里面进行下面的配置:</p>
+<ol type="1">
+<li>在 <code>Other Linker Flags</code> 里面添加 <code>-lGLFW3</code></li>
+<li>把 <code>Always Search User Paths</code> 设置为 <code>Yes</code></li>
+<li>在 <code>Header Search Paths</code> 中添加 <code>/usr/local/include</code>（注意如果这里的路径是 <code>/usr/local/include</code>，引用的时候需要这样写 <code>#include &lt;GLFW/glfw.h&gt;</code>；如果路径是 <code>/usr/local/include/GLFW</code>，引用的时候就需要这样写 <code>#include &lt;glfw.h&gt;</code>）</li>
+<li>在 <code>Library Search Paths</code> 中添加 <code>/usr/local/lib</code></li>
+</ol>
+<p>然后在 <code>Build Phases</code> 下的 <code>Link Binary With Libraries</code> 里面一一添加下面的动态链接库: - Cocoa Framework - OpenGL Framework - IOKit Framework - CoreVideo Framework</p>
+<p>至此便完成了配置，可以开始 OpenGL 代码的编写了。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近准备通过 &lt;a href=&quot;https://learnopengl-cn.github.io/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;LearnOpenGL&lt;/a&gt; 来学习一下OpenGL，环境配置的教程里面使用的开发工具是 Windows 上
+    
+    </summary>
+    
+    
+      <category term="Graphic" scheme="http://skx926.me/tags/Graphic/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>隐藏在4K电视中的猫腻</title>
+    <link href="http://skx926.me/2018/06/25/real-vs-fake-4k-tv/"/>
+    <id>http://skx926.me/2018/06/25/real-vs-fake-4k-tv/</id>
+    <published>2018-06-25T01:49:39.000Z</published>
+    <updated>2020-03-21T04:26:05.503Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近乔迁新居，媳妇又很喜欢看电视，因此准备买一台电视。</p>
+<p>某东上看了一圈之后发现现在的大屏电视基本上都支持4K分辨率。这让我颇感意外，因为现在4K的片源还不是很多，电视直播的信号甚至离1080p也都差的远。但是作为一个追求极致视觉体验的人，看到电视行业能够继续发展也是很欣慰的。</p>
+<p>现在互联网电视也是蓬勃发展，某米电视在某东上80万+的评论也充分的证明了这一点。原本我准备直接在某东上直接购买这一款畅销的电视，但是我媳妇是个细心的人，她还是想要去线下的电视卖场去看看。所以我们暂时没买，这一步的操作也为我们节省了几百块的运费。</p>
+<p>在我们看了几家不同品牌的4K电视之后，发现了一些隐藏在4K电视中的猫腻。要搞清楚这其中的猫腻，我们就得先了搞清楚屏幕显示的原理。</p>
+<h2 id="屏幕显示原理">屏幕显示原理</h2>
+<p>传统的液晶电视屏幕是通过RGB（红绿蓝）三原色来调和色彩及亮度显示点。因此每个像素点实际上有3个RGB字像素，这3个子像素分别根据信号显示不同的亮度就能够调制出一个像素的颜色。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/rgb.jpg">
+<p>传统的全高清1080p的分辨率为<code>1920 x 1080</code>，4K分辨率就是在其之上横向和纵向都增加了一倍的像素点即<code>3840 x 2160</code>，总共有<code>3840 x 2160 = 830万</code>个像素点，也就是<code>830万 x 3 = 2400万</code>个子像素。</p>
+<h2 id="色4k和3色4k">4色4K和3色4K</h2>
+<p>3色4K也就是传统意义上的4K，而现在市面上流行一种4色4K的面板，如果只看名字的话我们很容易会觉得4色4K要比3色4K要好，毕竟多了一个颜色嘛，然而事实并不是这样。</p>
+<h3 id="rgbw">RGBW</h3>
+<p>所谓的4色就是在RGB的基础上多加了一个w（白），但是这个白色并不是额外增加的，而是占用了原有的RGB的位置。这是什么意思呢？</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/rgbw.jpg">
+<p>如上图所示，新增加的白色并不是我们所期望的一个像素具有RGBW四个子像素而是占据了原有子像素的位置，使得每4个像素点中就有3的像素点无法包含完整的RGB信息。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/rgbw2.jpg">
+<p>所以这种4色4K屏幕的有效像素数量其实是<code>2880 x 2160</code>，这样的分辨率只能叫做3K或者假4K，因为它相比真正的4K分辨率少了25%的有效色彩信息。</p>
+<p>如果用这种屏幕来显示4K分辨率的图像会是什么结果？</p>
+<p>由于大多数的像素点无法显示完整的色彩信息，所以最终显示的效果就会明显失真。比如某一个像素本来是包含RGB三个子像素，如果把其中的B（蓝色）换成W（白色），根据光学原理我们可以知道这个像素点的色彩就会偏向黄色。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/compare.jpg">
+<p>上图左侧是RGB显示效果，右侧是RGBW显示效果，我们可以明显看出画面整体变暗，色彩失真。</p>
+<p>那么问题来了？如果用它来显示1080p的画面会是什么效果？我们知道，4k的分辨率正好是1080p的4倍，所以用4K屏显示1080p的画面的话就是使用4个像素点来显示同一个像素点的内容。那么同样的，使用这种假4K的屏幕也是用4个像素点来显示一个像素的内容，但问题在于这4个像素点里面有3个都不能显示准确的RGB信息。所以我们可以得到一个结论，这种假4K屏的实际显示效果反倒不如1080p的屏幕。</p>
+<h3 id="wrgb">WRGB</h3>
+<p>乍一看和RGBW貌似只是把W的位置换了个地方，但其实大有不同，WRGB是真4K。</p>
+<p>WRGB四色技术是LG OLED有机电视面板所独有的。这个技术其实就是单纯的将每个像素的子像素由三个增加到四个。不仅提升了画面的亮度，降低了功耗，同时丝毫不影响画面的清晰程度。而且子像素的总数还增加到了3840×2160×4。但是这种四色面板对技术的要求比较高，成本也比较难控制，使其只能应用于高端的机型，推广起来十分困难。</p>
+<h3 id="rgby">RGBY</h3>
+<p>RGBY就是在原有的红绿蓝三原色的基础上又增加了一个黄色，利用人眼对于绿色和黄色敏感度比较高的生理特点来提升清晰度。</p>
+<h2 id="钻石pentile排列">钻石PenTile排列</h2>
+<p>除了上面的几种在一个像素的子像素之中做文章的技术之外还有一种在相邻像素的子像素的数量和排列方式上做文章的技术————钻石PenTile排列。</p>
+<blockquote>
+<p>简单来说，传统的RGB像素排列要求所有的子像素在面积、形状、排列完全一致，除颜色不同之外（但排列也有明显的规律），所有的子像素看上去就像是彼此复制的。所以我们平时见到的除方向不同之外，都显得非常整齐、规则。但是PenTile排列下的屏幕则因为排列的不同而很容易分辨，最常见的情况是三种颜色的子像素不仅彼此之间拥有不同的面积，形状、排列位置也都不相同，因此整块面板看山去像是整个由RGB子像素组成的像素单元的复制，而且在某些特殊的排列下，某种颜色的子像素可能是圆形，而其他的两种子像素则一个宽大、一个窄小。更加具体的来说，PenTile排列无论如何变换子像素的形状，视觉上的基本规律都可以看成四个子像素将其他两种颜色的子像素包围在其中。PenTile排列技术最关键的地方就是利用不规则的子像素排列，以更少的子像素点代替更多的子像素点。按照设计这项技术的初衷，相较于一般的RGB排列，PenTile RGBG排列所需要的面板子像素点更少便可达到理论上相同的显示效果。</p>
+</blockquote>
+<img src="/2018/06/25/real-vs-fake-4k-tv/pentile1.jpg">
+<img src="/2018/06/25/real-vs-fake-4k-tv/pentile2.jpg">
+<p>上图为两个不同类型的Pentile排列方式，第二种即为钻石PenTile。</p>
+<p>PenTile排列的优点上面已经说了，他的缺点也显而易见，由于排列不规律且相邻像素之间采用公用的子像素，很容易出现颗粒感强、毛边突出、锯齿感严重等问题。</p>
+<p>解决这些问题的方案简单粗暴，就是堆砌分辨率。比如720p的分辨率画面不够好的话就用更加精细的1080p来中和PenTile排列所带来的问题。例如三星的Galaxy系列手机就是以高分辨率、高达四五百的ppi著称，其实人眼根本就不需要这么高的ppi，换句话说，它搞这么高的ppi一定程度上也是为了解决PenTile排列所带来的问题。</p>
+<h2 id="解码器">解码器</h2>
+<p>H.265/HEVC（High Efficiency Video Coding）是ITU-T VCEG 继H.264之后所制定的新的视频编码标准。相较于上一代的H.264可以节省近一半的数据量。而4K视频分辨率是1080p的4倍，数据量也大幅增加到1080p的4倍，这种情况下能够通过新的编码方式有效减少数据量可以说是非常重要。</p>
+<p>然而国内到某些无良厂商在标榜4K电视的同时却不支持H.265视频的解码，也就是说无法播放4K视频，这是何等的可笑！</p>
+<h2 id="数据接口">数据接口</h2>
+<p>对于一个真正的4K电视机，它除了要支持4K的分辨率，还得支持60Hz的刷新率。我们同时所观看的视频和电影一般都只有24或者30fps的帧率，那为什么需要60Hz的刷新率呢？</p>
+<p>一方面，24或30fps的帧率观看普通的电影确实问题不大，但是对于一些变化比较多的场面，眼神好的同学还是能够看出来画面不够连续。这个时候比较高端一些的电视机就会使用动态补偿技术来对画面进行优化。简单来说动态补偿就是通过一定的算法对视频对相邻帧的画面进行计算将它插帧到更高到帧率来使画面更加流畅。如果你的屏幕只支持30Hz的刷新率，那肯定没办法来进行动态补偿了。</p>
+<p>另一方面，现在的4K 60fps的片源还很少，很多人会把电视当作显示器来用。现在的显示器的刷新率基本都是60Hz以上，如果只有30Hz的刷新率，玩游戏的话就会让你感觉画面很不流畅。</p>
+<h3 id="hdmi">HDMI</h3>
+<p>HDMI是（High Definition Multimedia Interface）的缩写，意思是高清晰度多媒体接口，是一种数字化视频/音频接口技术，适合影像传输的专用型数字化接口，可同时传送音频和影像信号。</p>
+<p>现在的电视上一般都有HDMI接口，但是要支持4K 60fps的显示效果，HDMI接口的版本必须得在2.0以上。为什么这么说呢？我们来做一个计算：分辨率为<code>3840 x 2160</code>，帧率为60fps，那么每秒钟所需要传输的数据量为<code>3840 x 2160 x 3 x 8bit x 60 = 11943936000bit = 11.94Gb</code>，而HDMI 1.4的最大传输速率为10.2Gbps，无法满足4K 60fps的数据量，况且这还是在使用8位色、不算音频和HDR数据、传输效率100%的情况下。而HDMI 2.0的最大传输速率为18Gbps，可以满足此要求。</p>
+<h4 id="假hdmi-2.0">"假"HDMI 2.0</h4>
+<p>上面我们说了4K分辨率下正常输出60Hz所需要的带宽是HDMI 1.4所无法满足的。那么有没有什么办法呢？既然分辨率和刷新率都已经确定，那么要实现这个效果就只能在色深上面来做文章，如果RGB三原色所使用的24bit的数据量能够下降一半，那么HDMI 1.4就可以满足4K 60fps所需要的带宽了。YUV420正是实现这一目标的手段。</p>
+<p>YUV是一种不同于RGB的颜色编码的方式，具体的介绍可以查看我的另一篇博文<a href="http://skx926.com/2018/05/30/audio-and-video-1/" target="_blank" rel="noopener">iOS音视频的那些事儿（一）：数据的采集和编码</a>，YUV420就可以在亮度信息完全保留的同时压缩颜色信息使得最终数据量只有原来的一半。这样压缩过的图像会在清晰度上有一定程度的损失，在看电影或者玩游戏的时候感受不是很明显，但是对于文字这种棱角分明的图图形就会有一些肉眼看可以觉察到的细节不足。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/yuv.jpg">
+<p>采用YUV420输出时，蓝色和红色字体会变得模糊</p>
+<p>这种方式虽然也可以达到4K 60fps的显示目的，但是毕竟是一种临时的解决办法，不是每一款显示设备都支持YUV420的画面输入，同时除了NVDIA也很少有设备可以直接输出YUV420的画面。这就是为什么有些人购买了所谓的HDMI 2.0的电视，却无法正常输出4K 60fps画面的真正原因。</p>
+<p>买到这类假HDMI 2.0电视的用户如果有一台带N卡的电脑，就可以在把显卡驱动升级到340.43以上的情况下，在显卡驱动设置中将颜色格式从YCbCr444改成YCbCr420来实现4K 60fps的显示效果。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/nvdia.jpg">
+<h3 id="displayport">DisplayPort</h3>
+<p>DisplayPort也就是DP接口，也是一种高清数字显示接口标准。DP 1.2版本就支持最高21.6Gbps的传输速率，完全可以胜任4K 60fps的带宽需求。现在一些新的显卡上面都会有一个或多个DP接口，但是一般的电视都没有DP接口，所以基本只能用在显示器上。</p>
+<h3 id="usb">USB</h3>
+<p>有人说4K电视必须配置USB 3.0接口，使用USB 2.0无法流畅的播放4K视频。然而事实真的是这样吗？我们同样来做个计算。</p>
+<p>以我下载的一部时长为54s，帧率为24，大小为307M的4K演示片<code>Life of Pi Ultra-HD HDR.mp4</code>为例，其平均码率为<code>307MB / 54s = 6MB/s = 48Mbps</code>, 由于这部片的码率的动态的，我们假设实际播放中的最大码率为平均码率的2倍即100Mbps，我们再假设它是一部60fps的片子，因此码率再增加一倍为200Mbps，因此我们可以推算出，如果要流畅的播放这部片子，USB的读取速度必须高于<code>200Mbps / 8 = 25MB/s</code>，而USB 2.0的最大传输速度为60MB/s，完全可以胜任。</p>
+<p>你可能会问了，平时用U盘貌似没有这么快的速度啊，明明只有几M/s的速度。所以你也看出来了，制约USB传输速度的并不是协议的版本，而是U盘的闪存的速度。你用移动硬盘的话完全可以达到三四十M/s的速度。换句话说，如果你用一个劣质的U盘，即便是用USB 3.0的接口也可能无法流畅的播放4K视频。</p>
+<p>虽然USB 2.0已经完全可以胜任4K视频的播放了，但是技术发展太快，指不定哪一天就不够用了。所以既然USB 3.0的标准已经出来了，能支持最好，由此我们也能从中看出厂商们对待产品的态度。</p>
+<h2 id="hdr">HDR</h2>
+<img src="/2018/06/25/real-vs-fake-4k-tv/hdr.jpg">
+<p>这是我从某东上面截的某个电视的产品介绍。HDR可以说是随着4K一起火了起来，但是可能很多人都不知道HDR到底是什么。</p>
+<p>HDR全称High-Dynamic Range高动态范围，简单来说就是让画面黑的更黑，亮的更亮。相对的目前不含 HDR 效果的视频内容，都叫 SDR（一般动态范围）。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/light.jpg">
+<p>先来讲一下HDR的原理。衡量直射可见光的亮度单位是cd/m2，又叫尼特（nit）。伸手不见五指的黑即0尼特，星光是0.0001尼特，月光在0.01 - 1尼特之间，普通室内照明在100尼特，手机屏幕在300-500尼特左右，阳光明媚的白天则在10000 - 1百万尼特。人眼可感知的亮度范围是比较广的，传统标准亮度范围（SDR）可显示的亮度范围在0.01到100尼特之间，传统1080P蓝光碟最高亮度也就只有100尼特。而新一代的4K HDR电视则可以显示更广阔的亮度范围，从而大幅提升对比度。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/hdr-vs-sdr.jpg">
+<p>在HDR效果的实现上，液晶电视和OLED电视的特点也是不同的。上文提到过OLED的显示原理，黑位更深，因此在暗部细节上的表现更为优秀，轻松就能覆盖更广阔的对比度；而液晶因为天然缺陷，黑位很难往下压（三星的量子点和索尼Z9D的局部光控技术都是对背光进行更细腻的控制），只能靠不断提升峰值亮度来提升对比度。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/oled.jpg">
+<p>从上图可以看到，OLED最擅长表现的场面莫过于午夜星空，黑夜尽管黑得纯粹，而繁星点点照样闪亮，甚至是月光下的山脉、河流都可以看到；而液晶受制于背光，暗部细节损失的较多。在高曝光部分，液晶也容易损失亮部的细节，一个典型场面就是好莱坞大片中的爆炸，处理不好爆炸光球在SDR/普通液晶屏上会看到一块块白色亮斑；而OLED最高亮度虽然才300-400尼特，却可以表现出更多亮部的细节。可以说 OLED 相较于液晶的最大优势，就体现在HDR效果更为自然、逼真。</p>
+<p>这里要澄清一个常见的误区，就是最高亮度越高，HDR 效果越好。这在液晶电视上是对的，但不适用于技术完全不同的OLED屏幕。我们以 Ultra HD Premium认证中提到的参数举例：</p>
+<p>亮度1000尼特以上 / 黑位低于0.05尼特（主要针对LCD显示器）</p>
+<p>亮度540尼特以上 / 黑位低于0.0005尼特（主要针对OLED显示器）</p>
+<p>只要显示设备的峰值亮度与黑位达到其中一项，即可满足HDR的要求。可以看到，OLED的优势在于黑位远远低于LCD，而不是峰值亮度。</p>
+<p>国内很多三四千元的低端4K液晶电视的最高亮度只有300多尼特，但是却在宣传中号称自己支持HDR，实际上离行业标准还差得远。他们所谓多HDR最多只能算是对图像的一种后期处理，在实际的体验中最直观的感受就是把颜色调的更加艳丽了而已，并没有更多细节的显示。</p>
+<h2 id="图像优化">图像优化</h2>
+<p>在商场看了一圈电视之后，很多4K电视的画质完全就是油画脸，根本就没办法看。</p>
+<img src="/2018/06/25/real-vs-fake-4k-tv/movie1.jpg">
+<img src="/2018/06/25/real-vs-fake-4k-tv/movie2.jpg">
+<p>这是某米的网友发出来新老电视画质对比图，这跟我去某米之家里观看演示片的感受差不多，大家可以自行感受。现在<a href="https://tieba.baidu.com/f?kz=5333107355&amp;mo_device=1&amp;ssid=0&amp;from=1000539d&amp;uid=0&amp;pu=usm@2,sz@1320_2001,ta@iphone_1_12.0_3_605&amp;bd_page_type=1&amp;baiduid=311FA089C67E3DCA16B2033E072B90E6&amp;tj=h5_mobile_2_0_10_title&amp;referer=m.baidu.com?pn=0" target="_blank" rel="noopener">帖子</a>已经被删了。</p>
+<p>另一位网友的帖子很好的解答了我的疑惑，原帖可以看<a href="https://www.jdbbs.com/thread-5713021-1-1.html" target="_blank" rel="noopener">这里</a>:</p>
+<blockquote>
+<p>类似的 本来一个好好的标清视频到了这些个宇宙无敌的4K电视优化电路里 先“高端”无损放大 锐化（导致噪点增加） 去除噪点 （导致细节丢失 水粉画一样） 插帧 (导致动作不连续） 电平延伸 其实就是对比度加强 （直接导致高光死白 暗处黑乎乎 画面像版画 层次不真实）<br>
+甚至USM锐化 （感觉超现实了） HDR（改变真实场景的光线分布了，天空压暗，地面发亮，又超现实了） 肤色增强（导致肤色怪异，一个个人脸像猴屁股或者烤鸭，重口味） 伽马分段 （ 导致细微色彩过度丢失或加强 出现断层）</p>
+</blockquote>
+<p>对于这样的优化，我只想说：QNMLGB！</p>
+<h4 id="参考文章">参考文章</h4>
+<p><a href="https://www.youtube.com/watch?v=Rssh8FqMI_8" target="_blank" rel="noopener">4K UHD TV: RGBW vs RGB</a> <a href="https://www.zhihu.com/question/22469226" target="_blank" rel="noopener">真4K和伪4K有什么差别？</a> <a href="http://www.hdpfans.com/thread-748678-1-1.html" target="_blank" rel="noopener">别被厂商骗了 真假4k大起底</a> <a href="http://tech.sina.com.cn/d/2017-06-29/doc-ifyhryex5337247.shtml" target="_blank" rel="noopener">AMOLED PenTile屏幕真的那么“辣眼睛”吗？真相在此</a> <a href="http://tech.hexun.com/2014-11-04/170011557.html" target="_blank" rel="noopener">谁说四色一定是伪4K？ 教你慧眼识英雄</a> <a href="http://www.icpcw.com/Information/Tech/News/3257/325786_2.htm" target="_blank" rel="noopener">YUV420 破解“真假”HDMI2.0之谜</a> <a href="https://www.jd.com/phb/zhishi/35dc5b36d8bf72f4.html" target="_blank" rel="noopener">为什么4K电视必须配置USB3.0接口？</a> <a href="http://baijiahao.baidu.com/s?id=1572411221025266&amp;wfr=spider&amp;for=pc" target="_blank" rel="noopener">想买4K HDR 电视怕被坑？这篇文章就是为你准备的</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近乔迁新居，媳妇又很喜欢看电视，因此准备买一台电视。&lt;/p&gt;
+&lt;p&gt;某东上看了一圈之后发现现在的大屏电视基本上都支持4K分辨率。这让我颇感意外，因为现在4K的片源还不是很多，电视直播的信号甚至离1080p也都差的远。但是作为一个追求极致视觉体验的人，看到电视行业能够继续发
+    
+    </summary>
+    
+    
+      <category term="生活" scheme="http://skx926.me/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>iOS音视频的那些事儿（一）：数据的采集和编码</title>
+    <link href="http://skx926.me/2018/05/30/audio-and-video-1/"/>
+    <id>http://skx926.me/2018/05/30/audio-and-video-1/</id>
+    <published>2018-05-30T02:30:07.000Z</published>
+    <updated>2020-03-21T04:26:05.418Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="avfoundation简介">AVFoundation简介</h2>
+<p>AVFoundation是苹果在iOS和OS X系统中用于处理基于时间的媒体数据的Objective-C框架. 供使用者来开发媒体类型的应用程序。</p>
+<img src="/2018/05/30/audio-and-video-1/avfoundation.png">
+<p>如果只是进行简单的视频录制，使用UIKit中的<code>UIImagePickerController</code>就可以了；如果需要播放视频，使用AVKit框架也足够了。但是如果需要进行视频文件的处理等更灵活等操作，就需要使用到AVFoundation等底层的框架了。</p>
+<ul>
+<li><p>CoreAudio : 处理所有音频事件.是由多个框架整合在一起的总称,为音频和MIDI内容的录制,播放和处理提供相应接口.甚至可以针对音频信号进行完全控制,并通过Audio Units来构建一些复杂的音频处理.有兴趣的可以单独了解一下这个框架.</p></li>
+<li><p>Core Video : 是Mac OS和ios系统上针对数字视频所提供的普通模式。Core Video为其相对的Core Media提供图片缓存和缓存池支持，提供了一个能够对数字视频逐帧访问的接口。</p></li>
+<li><p>CoreMedia: 是AVFoundation所用到低层级媒体管道的一部分.提供音频样本和视频帧处理所需的低层级数据类型和接口.</p></li>
+<li><p>CoreAnimation: 动画相关框架, 封装了支持OpenGL和OpenGL ES功能的ObjC各种类. AVFoundation可以利用CoreAnimation让开发者能够在视频的编辑和播放过程中添加动画和图片效果.</p></li>
+</ul>
+<h2 id="数据采集">数据采集</h2>
+<h3 id="采集过程">采集过程</h3>
+<p>为了管理从相机或者麦克风等这样的设备捕获到的信息，我们需要输入对象(input)和输出对象(output)，并且使用一个会话(AVCaptureSession)来管理 input 和 output 之前的数据流：</p>
+<img src="/2018/05/30/audio-and-video-1/capture.png">
+<p>通过单个 session，也可以管理多个 input 和 output 对象之间的数据流，从而得到视频、静态图像和预览视图。input 可以有一个或多个输入端口，output 也可以有一个或多个数据来源。</p>
+<p>当添加 input 和 output 到 session 中时，session 会自动建立起一个连接(AVCaptureConnection)。我们可以使用这个 connection 来设置从 input 或者 从 output 得到的数据的有效性，也可以用来监控在音频信道中功率的平均值和峰值。</p>
+<img src="/2018/05/30/audio-and-video-1/connection.png">
+<h4 id="示例代码">示例代码</h4>
+<p>仅录制音频 <figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> audioSettings = [<span class="type">AVFormatIDKey</span>: kAudioFormatLinearPCM, <span class="comment">// 格式</span></span><br><span class="line">                     <span class="type">AVSampleRateKey</span>: <span class="number">44100</span>, <span class="comment">// 采样率</span></span><br><span class="line">                     <span class="type">AVNumberOfChannelsKey</span>: <span class="number">1</span>, <span class="comment">// 声道数</span></span><br><span class="line">                     <span class="type">AVLinearPCMBitDepthKey</span>: <span class="number">16</span>] <span class="comment">// 位深度</span></span><br><span class="line"><span class="keyword">let</span> url = <span class="type">URL</span>(fileURLWithPath: <span class="string">"\(NSHomeDirectory())/tmp/audio.pcm"</span>)</span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> recorder = <span class="keyword">try</span> <span class="type">AVAudioRecorder</span>(url: url, settings: audioSettings)</span><br><span class="line">    recorder.record()</span><br><span class="line">&#125; <span class="keyword">catch</span> <span class="keyword">let</span> error &#123;</span><br><span class="line">    <span class="built_in">print</span>(error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>录制视频</p>
+<figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> session = <span class="type">AVCaptureSession</span>()</span><br><span class="line"><span class="keyword">if</span> session.canSetSessionPreset(.hd1280x720) &#123;</span><br><span class="line">    session.sessionPreset = .hd1280x720</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">self</span>.session = session</span><br><span class="line"></span><br><span class="line"><span class="comment">// 添加视频源</span></span><br><span class="line"><span class="keyword">let</span> videoDevice = <span class="type">AVCaptureDevice</span>.<span class="keyword">default</span>(<span class="keyword">for</span>: .video)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> device = videoDevice &#123;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> input = <span class="keyword">try</span> <span class="type">AVCaptureDeviceInput</span>(device: device)</span><br><span class="line">        <span class="keyword">if</span> session.canAddInput(input) &#123;</span><br><span class="line">            session.addInput(input)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> <span class="keyword">let</span> error &#123;</span><br><span class="line">        <span class="built_in">print</span>(error)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 添加音频源</span></span><br><span class="line"><span class="keyword">let</span> audioDevice = <span class="type">AVCaptureDevice</span>.<span class="keyword">default</span>(<span class="keyword">for</span>: .audio)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> device = audioDevice &#123;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> input = <span class="keyword">try</span> <span class="type">AVCaptureDeviceInput</span>(device: device)</span><br><span class="line">        <span class="keyword">if</span> session.canAddInput(input) &#123;</span><br><span class="line">            session.addInput(input)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> <span class="keyword">let</span> error &#123;</span><br><span class="line">        <span class="built_in">print</span>(error)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 输出每一帧</span></span><br><span class="line"><span class="keyword">let</span> dataOutput = <span class="type">AVCaptureVideoDataOutput</span>()</span><br><span class="line">dataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange] <span class="keyword">as</span> [<span class="type">String</span> : <span class="type">Any</span>]</span><br><span class="line">dataOutput.setSampleBufferDelegate(<span class="keyword">self</span>, queue: <span class="type">DispatchQueue</span>.main)</span><br><span class="line"><span class="keyword">if</span> session.canAddOutput(dataOutput) &#123;</span><br><span class="line">    session.addOutput(dataOutput)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 输出为文件</span></span><br><span class="line"><span class="keyword">let</span> fileOutput = <span class="type">AVCaptureMovieFileOutput</span>()</span><br><span class="line"><span class="keyword">if</span> session.canAddOutput(fileOutput) &#123;</span><br><span class="line">    session.addOutput(fileOutput)</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">let</span> connection = fileOutput.connection(with: .video)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">let</span> conn = connection, conn.isVideoStabilizationSupported &#123;</span><br><span class="line">    conn.preferredVideoStabilizationMode = .auto</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">let</span> url = <span class="type">URL</span>(fileURLWithPath: <span class="string">"\(NSHomeDirectory())/tmp/movie.mov"</span>)</span><br><span class="line"><span class="comment">// 开始录制</span></span><br><span class="line">fileOutput.startRecording(to: url, recordingDelegate: <span class="keyword">self</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> previewLayer = <span class="type">AVCaptureVideoPreviewLayer</span>(session: session)</span><br><span class="line">previewLayer.frame = view.bounds</span><br><span class="line">view.layer.addSublayer(previewLayer)</span><br><span class="line"></span><br><span class="line">session.startRunning()</span><br></pre></td></tr></table></figure>
+<p><code>AVCaptureMovieFileOutput</code>和<code>AVCaptureVideoDataOutput</code>的区别在于，前者是把采集到到数据直接写入到文件，而后者通过下面到代理方法将每一帧到图像数据发送过来，以便于进行一些处理。</p>
+<figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">captureOutput</span><span class="params">(<span class="number">_</span> output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection)</span></span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(sampleBuffer)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="音频采集相关概念">音频采集相关概念</h3>
+<p>音频的采集过程主要是通过设备将环境中的模拟信号转换成<code>PCM</code>编码的原始数据，然后编码压缩成<code>MP3</code>、<code>AAC</code>、<code>WMA</code>、<code>m4a</code>、<code>APE</code>、<code>FLAC</code>等格式。</p>
+<h4 id="pcm">PCM</h4>
+<blockquote>
+<p>PCM全称Pulse Code Modulation，中文名为脉冲编码调制。脉冲编码调制就是对模拟信号先抽样，再对样值幅度量化，编码的过程。</p>
+</blockquote>
+<p>衡量一个音频文件的质量的一个重要指标是比特率(码率)，单位为bps(bit per second)，也就是单位时间内传输的比特数。</p>
+<p>而影响比特率的因素有：</p>
+<ol type="1">
+<li>采样率(Sample Rate)：采样的频率，采样的频率越高，数据量就越大，音质就越高。</li>
+</ol>
+<img src="/2018/05/30/audio-and-video-1/pcm.jpg">
+<ol start="2" type="1">
+<li><p>位深度(Bit Depth)：表示每一个采样点所需要的数值的大小。可以是4bit、8bit、16bit等，位数越多，采样点表示的精度就越高，音质就越高，数据量也会成倍的增加。</p></li>
+<li><p>声道数(Number of Channels)：由于音频的采集和播放是可以叠加的，因此，可以同时从多个音频源采集声音，并分别输出到不同的扬声器，故声道数一般表示声音录制时的音源数量或回放时相应的扬声器数量。声道数为 1 和 2 分别称为单声道和双声道。</p></li>
+</ol>
+<p>根据上面的这些信息我们就可以计算出一个采样率为44100Hz，位深度为16bit，时长为5分钟的双声道CD歌曲的数据量为： <code>44100Hz x 16bit x 5 x 60s x 2 = 423360000bit = 52.9MB</code> 比特率为：<code>423360000bit / (5 x 60s) = 1441kbps</code> 这样的数据大小显然是不能接受的，所以才有了上面提到的<code>MP3</code>、<code>AAC</code>、<code>WMA</code>、<code>m4a</code>、<code>APE</code>、<code>FLAC</code>这些压缩格式的出现。</p>
+<p>音频的压缩分为无损压缩和有损压缩，简单的来说，有损压缩就是通过删除一些已有数据中不太重要的数据来达到压缩目的；无损压缩就是通过优化排列方式来达到压缩目的。</p>
+<p><code>MP3</code>、<code>AAC</code>、<code>WMA</code>、<code>m4a</code>都属于有损压缩，假设把上面的歌曲压缩为码率128kpbs的普通音质的MP3，压缩比为<code>1441kbps / 128kbps = 11</code>，因此压缩后的文件大小为<code>52.9MB / 11 = 5MB</code>。</p>
+<p><code>APE</code>、<code>FLAC</code>属于无损压缩，文件相对较大。</p>
+<h3 id="图像采集相关概念">图像采集相关概念</h3>
+<p>图像采集的图片结果组合成一组连续播放的动画，即构成视频中可肉眼观看的内容。图像的采集过程主要由摄像头等设备拍摄成 YUV 编码的原始数据，然后经过编码压缩成 H.264 等格式的数据分发出去。常见的视频封装格式有：MP4、3GP、AVI、MKV、WMV、MPG、VOB、FLV、SWF、MOV、RMVB 和 WebM 等。</p>
+<p>图像数据质量的同样可以通过码率来进行衡量，而影响码率的因素主要有：</p>
+<ol type="1">
+<li>图像的分辨率(Resolution)：视频采集过程中的原始分辨率决定了视频整体的清晰度，分辨率越高，视频越清晰。常见的分辨率有<code>480p</code>、<code>720p</code>、<code>1080p</code>、<code>4k</code>。</li>
+<li>图像的格式：视频图像一般采用YUV格式存储原始的数据信息，而不是采用常见的RGB格式。</li>
+<li>帧率(Frame Rate)：单位时间内捕获到到图像到数量，帧率越高，画面的流畅度就越高。一般的视频的帧率为30fps。延时摄影就是以远低于普通帧率的频率进行图像的采集然后以正常的帧率进行播放，就会有一种加速的效果。而高速摄影（慢动作）就是以远高于普通帧率的频率进行图像的采集，然后以正常的帧率进行播放，就会有一种变慢的效果。</li>
+<li>传输通道数：一般情况下都只有一个摄像头进行数据的采样，而随着VR和AR技术的发展，要拍摄一个360度的视频，就需要多个摄像头来同时进行采集了。</li>
+</ol>
+<h4 id="图像的位深度">图像的位深度</h4>
+<p>我们知道对于一个普通的不包含Alpha通道的位图图像而言，每一个像素点的数据都可以通过R、G、B三个分量数据来进行表示。每个数据用用多大的数值来表示就决定了这个图像的位深度，也即图像的色彩范围。假设我们用1个字节来表示一个分量的数值，即24位真彩色，那么总共就有<code>2^8 x 2^8 x 2^8 = 1600万</code>种颜色，而如果对RGB分别用3bit、3bit、2bit也即8位色来表示的话只有<code>2^3 x 2^3 x 2^2 = 256</code>种颜色。</p>
+<img src="/2018/05/30/audio-and-video-1/24bit.png">
+<p>24位色的图片 <img src="/2018/05/30/audio-and-video-1/8bit.png"> 8位色的图片</p>
+<h4 id="yuv格式">YUV格式</h4>
+<p>与我们所熟知的RGB类似，YUV也是一种颜色的编码方法，主要用于视频领域。它将亮度信息(Y)与色彩信息(UV也称CbCr)分离，没有UV信息一样可以显示完整的图像，只不过是黑白的。这样的设计很好地解决了彩色电视机与黑白电视的兼容问题。并且，YUV不像RGB那样要求三个独立的视频信号同时传输，所以用YUV方式传送占用极少的频宽。我们人眼对于亮度的感知比对色彩的感知更为强烈，所以可以通过色彩信息(UV)的采样来减少数据量。</p>
+<img src="/2018/05/30/audio-and-video-1/chroma.png">
+<p>色彩信息(UV) <img src="/2018/05/30/audio-and-video-1/luma.png"> 亮度和色度的对比</p>
+<p>YUV码流的存储格式其实与其采样的方式密切相关，主流的采样方式有三种，YUV4:4:4、YUV4:2:2、YUV4:2:0，如下图所示： <img src="/2018/05/30/audio-and-video-1/yuv.png"></p>
+<p>对于YUV 4:4:4采样，每一个Y分量对应一组UV分量 对于YUV 4:2:2采样，每两个Y分量公用一组UV分量 对于YUV 4:2:0采样，每四个Y分量公用一组UV分量</p>
+<p>YUV格式有两大类：planar和packed。 对于planar的YUV格式，先连续存储所有像素点的Y，紧接着存储所有像素点的U，随后是所有像素点的V。 对于packed的YUV格式，每个像素点的Y,U,V是连续交叉存储的。</p>
+<p>一般移动平台视频录制使用的是YUV 4:2:0，而根据各个分量的排列顺序不同又分为<code>YV12</code>、<code>I420(YU12)</code>、<code>NV12</code>、<code>NV21</code>。</p>
+<p><code>YV12</code>和<code>I420</code>也称为YUV420P，即planar平面格式。YV12和I420的区别仅在与UV顺序的不同。顾名思义，YV12中Y平面后面紧跟的是V平面，然后是U平面，12表示它的位深度为12，也就是一个像素占12bit。而I420(YU12)刚好相反。</p>
+<p><code>NV12</code>和<code>NV21</code>都属于YUV420SP，即Y分量平面格式，UV分量打包格式。也即先存储Y平面，后面是UV分量交错存储。iOS平台使用的是<code>NV12</code>格式。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">I420: YYYYYYYY UU VV  =&gt; YUV420P</span><br><span class="line">YV12: YYYYYYYY VV UU  =&gt; YUV420P</span><br><span class="line">NV12: YYYYYYYY UVUV   =&gt; YUV420SP</span><br><span class="line">NV21: YYYYYYYY VUVU   =&gt; YUV420SP</span><br></pre></td></tr></table></figure>
+<p>I420(Planar)的单帧结构示意图如下：</p>
+<img src="/2018/05/30/audio-and-video-1/i420p.png">
+<p>NV12(Planar)的单帧结构示意图如下:</p>
+<img src="/2018/05/30/audio-and-video-1/nv12.png">
+<p>根据上图所示：</p>
+<p>一张分辨率为6 x 4的图片采用YUV420的方式存储所占的空间为<code>6 x 4 + 6 + 6 = 36</code>个字节，而如果采用RGB的方式存储就需要占用<code>6 x 4 x 3 = 72</code>个字节，数据量减少了一半。</p>
+<p>如果以YUV420的方式编码一部720p、帧率为30fps、时长两小时的电影所需要的空间为</p>
+<p><code>12bit x 1280 x 720 x 30 x 120 x 60 = 2.38 x 10^12bit = 298.6GB</code></p>
+<p>这个大小显然是不能接受的，经过编码我们可以把它压缩到2G左右，而画面到清晰度不会有多少损失。</p>
+<h3 id="视频编码">视频编码</h3>
+<h4 id="基本原理">基本原理</h4>
+<p>为什么视频文件的压缩比可以达到100:1甚至更高？核心的思想就是去除冗余信息。</p>
+<p>视频文件中的冗余信息分为以下几类：</p>
+<ol type="1">
+<li>空间冗余：每一帧图像相邻像素之间有较强的关联性</li>
+<li>时间冗余：视频相邻帧之间的内容相似</li>
+<li>编码冗余：不同像素值出现的概率不同</li>
+<li>视觉冗余：人眼对于某些细节不敏感</li>
+<li>知识冗余：规规律性的结构可由先验知识和背景知识得到</li>
+</ol>
+<p>对于视频文件最简单的压缩方式就是对每一帧图像进行压缩，叫做帧内压缩。有一种比较古老的 MJPEG 编码就是这种编码方式。可以理解为把视频的每一帧当作一张图片，然后按照JPEG的方式来进行压缩。这样的压缩方式只处理了空间冗余信息，离理想的压缩比还差得远。</p>
+<p>视频的图像的相邻帧之间具有很大的相似性，因此去除时间冗余信息对于提高压缩比有很大的提升空间。比如说一些高级的编码器可以采用帧间编码，简单点说就是通过搜索算法选定了帧上的某些区域，然后通过计算当前帧和前后参考帧的向量差进行编码的一种形式，通过下面两个图 2 连续帧我们可以看到，滑雪的同学是向前位移的，但实际上是雪景在向后位移。后面的帧就可以参考前面的帧进行编码，这样后面的帧编码的结果就非常小，压缩比很高。</p>
+<img src="/2018/05/30/audio-and-video-1/time-redundancy.jpg">
+<p>去除其他的冗余信息这里就不多说了。</p>
+<h4 id="常用编码器">常用编码器</h4>
+<h5 id="h.264">H.264</h5>
+<blockquote>
+<p>H.264/AVC 是现在使用最广泛的编码标准。与旧标准相比，它能够在更低带宽下提供优质视频（换言之，只有 MPEG-2，H.263 或 MPEG-4 第 2 部分的一半带宽或更少），也不增加太多设计复杂度使得无法实现或实现成本过高。另一目的是提供足够的灵活性以在各种应用、网络及系统中使用，包括高、低带宽，高、低视频分辨率，广播，DVD 存储，RTP/IP 网络，以及 ITU-T 多媒体电话系统。</p>
+</blockquote>
+<h5 id="h.265">H.265</h5>
+<p>2017年6月6日凌晨召开WWDC 2017大会上苹果在iOS11上推出了HEVC，用来取代H.264</p>
+<blockquote>
+<p>高效率视频编码（High Efficiency Video Coding，简称HEVC）是一种视频压缩标准，被视为是 ITU-T H.264/MPEG-4 AVC 标准的继任者。2004 年开始由 ISO/IEC Moving Picture Experts Group（MPEG）和 ITU-T Video Coding Experts Group（VCEG）作为 ISO/IEC 23008-2 MPEG-H Part 2 或称作 ITU-T H.265 开始制定。第一版的 HEVC/H.265 视频压缩标准在 2013 年 4 月 13 日被接受为国际电信联盟（ITU-T）的正式标准。HEVC 被认为不仅提升视频质量，同时也能达到 H.264/MPEG-4 AVC 两倍之压缩率（等同于同样画面质量下比特率减少了 50%），可支持 4K 分辨率甚至到超高清电视（UHDTV），最高分辨率可达到 8192×4320（8K分辨率）。</p>
+</blockquote>
+<h4 id="硬件编解码和软件编解码">硬件编解码和软件编解码</h4>
+<p>iOS8开始，苹果通过<code>Video ToolBox</code>开放了系统的硬件编解码能力。在这之前，开发者基本上都是使用的是一个叫做<a href="https://www.ffmpeg.org/" target="_blank" rel="noopener">FFmpeg</a>的多媒体库，利用CPU做视频的编解码，俗称软解码。</p>
+<blockquote>
+<p>FFmpeg 是一个自由软件，可以运行音频和视频多种格式的录影、转换、流功能，包含了 libavcodec ——这是一个用于多个项目中音频和视频的解码器库，以及 libavformat —— 一个音频与视频格式转换库。</p>
+</blockquote>
+<h4 id="视频容器格式">视频容器(格式)</h4>
+<p>所谓容器，就是把编码器生成的多媒体内容（视频，音频，字幕，章节信息等）混合封装在一起的标准。容器使得不同多媒体内容同步播放变得很简单，而容器的另一个作用就是为多媒体内容提供索引，也就是说如果没有容器存在的话一部影片你只能从一开始看到最后，不能拖动进度条（当然这种情况下有的播放器会花比较长的时间临时创建索引），而且如果你不自己去手动另外载入音频就没有声音。</p>
+<img src="/2018/05/30/audio-and-video-1/mov-atom.gif">
+<p>MOV文件的结构</p>
+<p>常见的视频容器格式有：</p>
+<ul>
+<li><p>AVI 格式（后缀为 .AVI）: 它的英文全称为 Audio Video Interleaved ，即音频视频交错格式。它于 1992 年被 Microsoft 公司推出。 这种视频格式的优点是图像质量好。由于无损AVI可以保存 alpha 通道，经常被我们使用。缺点太多，体积过于庞大，而且更加糟糕的是压缩标准不统一，最普遍的现象就是高版本 Windows 媒体播放器播放不了采用早期编码编辑的AVI格式视频，而低版本 Windows 媒体播放器又播放不了采用最新编码编辑的AVI格式视频，所以我们在进行一些AVI格式的视频播放时常会出现由于视频编码问题而造成的视频不能播放或即使能够播放，但存在不能调节播放进度和播放时只有声音没有图像等一些莫名其妙的问题。</p></li>
+<li><p>QuickTime File Format 格式（后缀为 .MOV）: 美国Apple公司开发的一种视频格式，默认的播放器是苹果的QuickTime。 具有较高的压缩比率和较完美的视频清晰度等特点，并可以保存alpha通道。</p></li>
+<li><p>MPEG 格式（文件后缀可以是 .MPG .MPEG .MPE .DAT .VOB .ASF .3GP .MP4等) : 它的英文全称为 Moving Picture Experts Group，即运动图像专家组格式，该专家组建于1988年，专门负责为 CD 建立视频和音频标准，而成员都是为视频、音频及系统领域的技术专家。 MPEG 文件格式是运动图像压缩算法的国际标准。MPEG 格式目前有三个压缩标准，分别是 MPEG－1、MPEG－2、和MPEG－4 。MPEG－1、MPEG－2 目前已经使用较少，着重介绍 MPEG－4，其制定于1998年，MPEG－4 是为了播放流式媒体的高质量视频而专门设计的，以求使用最少的数据获得最佳的图像质量。目前 MPEG-4 最有吸引力的地方在于它能够保存接近于DVD画质的小体积视频文件。</p></li>
+<li><p>Real Video 格式（后缀为 .RM .RMVB）: Real Networks 公司所制定的音频视频压缩规范称为Real Media。 用户可以使用 RealPlayer 根据不同的网络传输速率制定出不同的压缩比率，从而实现在低速率的网络上进行影像数据实时传送和播放。RMVB 格式：这是一种由RM视频格式升级延伸出的新视频格式，当然性能上有很大的提升。RMVB 视频也是有着较明显的优势，一部大小为700MB左右的 DVD 影片，如果将其转录成同样品质的 RMVB 格式，其个头最多也就 400MB 左右。大家可能注意到了，以前在网络上下载电影和视频的时候，经常接触到 RMVB 格式，但是随着时代的发展这种格式被越来越多的更优秀的格式替代，著名的人人影视字幕组在2013年已经宣布不再压制 RMVB 格式视频。</p></li>
+<li><p>Matroska 格式（后缀位 .MKV）:是一种新的多媒体封装格式，这个封装格式可把多种不同编码的视频及16条或以上不同格式的音频和语言不同的字幕封装到一个Matroska Media档内。它也是其中一种开放源代码的多媒体封装格式。Matroska同时还可以提供非常好的交互功能，而且比MPEG更方便、强大。</p></li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;avfoundation简介&quot;&gt;AVFoundation简介&lt;/h2&gt;
+&lt;p&gt;AVFoundation是苹果在iOS和OS X系统中用于处理基于时间的媒体数据的Objective-C框架. 供使用者来开发媒体类型的应用程序。&lt;/p&gt;
+&lt;img src=&quot;/2018
+    
+    </summary>
+    
+    
+      <category term="iOS" scheme="http://skx926.me/tags/iOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>深入理解HTTPS</title>
+    <link href="http://skx926.me/2017/12/05/https/"/>
+    <id>http://skx926.me/2017/12/05/https/</id>
+    <published>2017-12-05T14:18:12.000Z</published>
+    <updated>2020-03-21T04:26:05.434Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="http为什么不安全">HTTP为什么不安全</h2>
+<p>HTTP协议传输的数据都是未经过加密处理的，也就是说客户端和服务端使用HTTP通信的中间环节都有可能会产生信息的泄漏。</p>
+<h2 id="如何让http更安全">如何让HTTP更安全</h2>
+<p>有人会说很简单，把数据加密一下不就行了。嗯，说起来很简单，但是具体怎么加密呢？</p>
+<h3 id="对称加密还是非对称加密">对称加密还是非对称加密？</h3>
+<p>我们现在有两种加密方式可以选择：对称加密和非对称加密。</p>
+<blockquote>
+<p>对称加密是最快速、最简单的一种加密方式，加密（encryption）与解密（decryption）用的是同样的密钥（secret key）,这种方法在密码学中叫做对称加密算法。</p>
+</blockquote>
+<blockquote>
+<p>非对称加密算法需要两个密钥：公开密钥（publickey）和私有密钥（privatekey）。公开密钥与私有密钥是一对，如果用公开密钥对数据进行加密，只有用对应的私有密钥才能解密；如果用私有密钥对数据进行加密，那么只有用对应的公开密钥才能解密。因为加密和解密使用的是两个不同的密钥，所以这种算法叫作非对称加密算法。</p>
+</blockquote>
+<p>如果我们采用对称加密的方式，那么就需要将对称密钥以明文的方式从一方传递到另一方，这样的话密钥很容易被窃取，这样的加密也形同虚设。</p>
+<p>如果我们使用非对称加密的方式，就需要将服务端的公钥在客户端发起请求之后传递给客户端，客户端使用服务端的公钥加密数据然后发送给服务端，服务端在接收到数据之后用自己的私钥进行解密就可以了。但是这样只是一个单向的加密。由于服务端的公钥是是公开的，任何一个人都可以获取，所以服务端用私钥加密后的数据是谁都可以解密的，所以也就不安全。</p>
+<p>为了解决这个问题，我们可以让客户端也生成一对非对称的密钥，在获取到服务端的公钥之后，用其将客户端的公钥加密发送给服务端，服务端后面的数据都通过客户端的公钥进行加密再传输，这样就安全了。</p>
+<p>但是这样的话又存在另外一个问题，就是效率问题。非对称加密的算法相对比较复杂，如果两端每次通信都使用非对称加密的进行加密的话，对通信的效率会有很大的影响。</p>
+<p>既然非对称加密的效率比较低，那么我们是否可以将对称加密和非对称加密进行结合呢？答案是肯定的。我们可以在客户端获取到服务端的公钥之后生成一对对称密钥，然后发送给服务端。服务端在接收到之后后续的通信双方都使用对称密钥进行加密就可以在提高安全性的同时提升加密的效率。</p>
+<h3 id="如何保证服务端不会被冒充">如何保证服务端不会被冒充</h3>
+<p>到上一步我们似乎已经完美解决HTTP的安全问题了，但是新的问题又来了。如果在我们第一步客户端给服务器发送请求的时候会话已经被劫持，第二步我们收到的公钥也是假的，那我们后续的加密不都是白费力气？那么如何保证我们通信的服务器就是我们想要的服务器呢？</p>
+<p>如果有两个人都说自己是小明，而你并不知道小明长什么样子，怎么判断谁是真正的小明呢？很简单，你可以要求他们亮出身份证，以此来确定谁是小明。同样的道理，两台服务器都说自己是google.com，我们可以要求每个服务器都去一个权威的机构（CA）申请一个唯一的身份证也就是数字证书，证书上写明自己的域名和公钥。这样客户端就可以通过他们的证书来判断谁是真正的google.com。</p>
+<blockquote>
+<p>数字证书颁发过程：用户首先产生自己的密钥对，并将公共密钥及部分个人身份信息传送给认证中心。认证中心在核实身份后，将执行一些必要的步骤，以确信请求确实由用户发送而来，然后，认证中心将发给用户一个数字证书，该证书内包含用户的个人信息和他的公钥信息，同时还附有认证中心的签名信息。用户就可以使用自己的数字证书进行相关的各种活动。数字证书由独立的证书发行机构发布。数字证书各不相同，每种证书可提供不同级别的可信度。可以从证书发行机构获得您自己的数字证书。</p>
+</blockquote>
+<h3 id="如何验证数字证书的真伪">如何验证数字证书的真伪</h3>
+<p>那么问题又来了，既然有了数字证书将服务器地址和公钥绑定在了一起。那么又如何证明这个数字书是真的呢？</p>
+<p>颁发数字证书的时候，CA将你提交的服务端身份信息和公钥写在证书上，然后使用一定的哈希算法从证书计算出一个摘要值，然后使用他们的私钥来对这个摘要值进行加密，然后添加到证书上。这段加密后的数据就叫做数字签名。</p>
+<p>CA的公钥已经事先保存在了客户端所在的操作系统当中，所以当客户端收到服务端的数字证书之后就可以使用CA的公钥解密得到摘要值，然后通过同样的哈希算法对证书内容计算出一个摘要值并和解密得到的摘要值进行比对，如果完全相同则证明这个服务器就是我们想要通信的。之后就可以开心的进行握手的后续步骤了。</p>
+<p>我们前面推演出的这个加密的过程其实就是HTTPS的工作过程。</p>
+<h2 id="什么是https">什么是HTTPS</h2>
+<p>HTTPS全称是Hyper Text Transfer Protocol over Secure Socket Layer，顾名思义就是在HTTP的下面在加上一层SSL/TSL层以保证数据传输的安全性。</p>
+<h2 id="什么是ssltsl">什么是SSL/TSL</h2>
+<p>SSL(Secure Sockets Layer 安全套接层),及其继任者传输层安全（Transport Layer Security，TLS）是为网络通信提供安全及数据完整性的一种安全协议。TLS与SSL在传输层对网络连接进行加密。</p>
+<h2 id="ssltsl握手过程">SSL/TSL握手过程</h2>
+<p>关于SSL/TSL握手过程，这里有一篇阮一峰老师的文章已经讲解的很详细了：<a href="http://www.ruanyifeng.com/blog/2014/09/illustration-ssl.html" target="_blank" rel="noopener">图解SSL/TLS协议</a>，跟我们前面最终讨论出的结果相差无几，具体的过程这里就不多废话了。</p>
+<h2 id="中间人攻击和https调试">中间人攻击和HTTPS调试</h2>
+<p>有人可能觉得HTTPS已经很安全了，即便有中间人他也只能干瞪眼，啥坏事也干不了。如果这样认为那你就大错特错了！</p>
+<p>试想你不经意间安装了一个含有攻击者公钥的的根证书，然后在客户端和服务端握手阶段服务端发送的证书被攻击者截获，攻击者伪造一个身份信息和服务端证书相同但是替换成它的公钥的证书并用它的私钥进行签名。客户端在收到攻击者的证书之后由于系统中存在包含有攻击者的公钥的证书，所以可以成功的验证和解密收到的证书，然后客户端使用攻击者的公钥加密对称密钥发送给服务端时又被攻击者截获，这时攻击者使用自己的私钥解密获得对称密钥，然后再用服务端的公钥进行加密再发送给服务端。这样就在神不知鬼不觉中成功窃取了信息。</p>
+<p>所以为了安全，我们在手机和电脑上安装证书时就要非常谨慎，防止重要信息被窃取。</p>
+<p>但是同时这也给我们提供了一种HTTPS调试的思路：我们在调试接口时可能会需要查看HTTPS的报文真实内容，这对于HTTP来说很简单，直接用WireShark、Charles这类软件进行抓包就可以了。但是对于HTTPS就只能干着急，这时候我们就可以通过OpenSSL生成一个自签名的证安装在客户端来对HTTPS请求的内容进行查看。</p>
+<h2 id="利用ssl-pinning提高应用安全性">利用SSL Pinning提高应用安全性</h2>
+<p>从上面我们知道HTTPS虽然已经足够安全，但还是存在中间人攻击的风险。SSL Pinning应运而生，SSL Pinning可以理解为证书绑定，也就是客户端事先内置一份服务端的证书，在通信的时候就把它和服务端发过来的证书进行比对，如果两个证书有任何的不同，就可以判定受到中间人攻击，马上可以中断请求。这样中间人就无法成功进行攻击了。</p>
+<p>SSL Pinning虽然可以很好的解决中间人攻击问题，但是由于客户端要事先内置服务端的证书，所以只适用于客户端事先知道要请求的服务器的地址和证书的情况，比如iOS和Android应用与服务器之间的通信。像浏览器这种可以随意输入服务器的地址的场景SSL Pinning就无能为力了。</p>
+<h2 id="不同浏览器预装证书的差异">不同浏览器预装证书的差异</h2>
+<p>前段时间刚安装了新版的Firefox，打开别的网站速度都很快，但就是死活打不开google.com，会报证书不安全的错误，但同时使用Safari和Chrome都可以正常打开google.com。后来才发现是我在我是用的代理软件中开启了对google.com的https抓包（也就是是用中间人攻击的方式），把它关掉之后Firefox就可以正常访问google.com了，But why？直到我看到了知乎上的一个回答中的一句话之后才茅塞顿开：</p>
+<blockquote>
+<p><a href="https://www.zhihu.com/question/37370216/answer/74060132" target="_blank" rel="noopener">证书是需要预装的，特别是根证书。IE和Chrome是通过内置在Windows系统中的TrustStore来管理根证书（当然自己也可以手动导入自签证书，浏览不会认可的因为有OCSP和CRL--之后细讲）；而Firefox则是内置在自己的浏览中。</a></p>
+</blockquote>
+<p>由于Firefox的所信任的根证书都内置在浏览器当中，并不会使用系统中的根证书，而我们自签名的证书只能安装在系统中，所以Firefox无法在内置的根证书中找到可以用来解密我们已经修改过的服务端证书，所以就会报错了。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;http为什么不安全&quot;&gt;HTTP为什么不安全&lt;/h2&gt;
+&lt;p&gt;HTTP协议传输的数据都是未经过加密处理的，也就是说客户端和服务端使用HTTP通信的中间环节都有可能会产生信息的泄漏。&lt;/p&gt;
+&lt;h2 id=&quot;如何让http更安全&quot;&gt;如何让HTTP更安全&lt;/h2&gt;
+&lt;
+    
+    </summary>
+    
+    
+      <category term="Web" scheme="http://skx926.me/tags/Web/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>SSH协议工作过程</title>
+    <link href="http://skx926.me/2017/11/30/understanding-of-ssh/"/>
+    <id>http://skx926.me/2017/11/30/understanding-of-ssh/</id>
+    <published>2017-11-29T16:29:40.000Z</published>
+    <updated>2020-03-21T04:26:05.537Z</updated>
+    
+    <content type="html"><![CDATA[<p>说到SSH，我们很多人都用过，比如我们通过git提交代码到Github的时候需要先添加本机的public key到Github网站，使用SSH远程连接VPS来对服务器进行操作。但是SSH究竟是什么，它是如何工作的呢？</p>
+<h2 id="定义">定义</h2>
+<p>SSH全称Secure Shell，是一个提供数据通信安全、远程登录、远程指令执行等功能的安全网络协议，由芬兰赫尔辛基大学研究员Tatu Ylönen，于1995年提出，其目的是用于替代非安全的Telnet、rsh、rexec等远程Shell协议。之后SSH发展了两个大版本SSH-1和SSH-2。</p>
+<h2 id="ssh协议工作过程">SSH协议工作过程</h2>
+<p>SSH工作过程可以分解成几个主要阶段： - 连接建立 - 协议协商 - 算法协商 - 密钥交换 - 用户认证 - 服务请求 - 数据传输和连接关闭</p>
+<p>下面我们通过终端发起一个SSH远程登录的请求并使用Wireshark抓包情况来具体分析一下SSH连接的各个阶段： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ ssh skx926@45.32.31.176</span><br></pre></td></tr></table></figure></p>
+<h3 id="建立tcp连接">建立TCP连接</h3>
+<ol type="1">
+<li>服务端打开22端口，等待客户端连接。</li>
+<li>客户端向服务器发起TCP连接进行三次握手。</li>
+</ol><img src="/2017/11/30/understanding-of-ssh/ssh0.gif">
+<p>由上图可以看出，前面的三个包正好是TCP进行三次握手的阶段。</p>
+<h3 id="协议协商">协议协商</h3>
+<p>在客户端和服务端建立TCP连接之后客户端和服务端互发自己支持的SSH版本信息，双方收到版本号之后会选用两者中较小的版本来进行通讯。<img src="/2017/11/30/understanding-of-ssh/ssh1.gif"> 由上图可以看出双方都支持<code>SSH2.0-OpenSSH_7.4</code>。</p>
+<h3 id="算法协商">算法协商</h3>
+<p>客户端和服务端分别发送所支持的算法列表给对方并确定最终使用的算法。</p><img src="/2017/11/30/understanding-of-ssh/ssh2.gif">
+<p>从上图中我们可以看到客户端发送给服务端的算法列表中有很多算法: - 用于产生会话密钥的密钥交换算法<code>kex_algorithms</code> - 用于数据信息加密的加密算法<code>encryption_algorithms_client_to_server</code>和<code>encryption_algorithms_server_to_client</code> - 用于数字签名和认证的主机公钥算法<code>server_host_key_algorithms</code> - 用户数据完整性保护的MAC算法<code>mac_algorithms_client_to_server</code>和<code>mac_algorithms_server_to_client</code></p>
+<p>算法协商的具体规则是这样的： &gt; 双方依次协商每一种算法（密钥交换算法、加密算法等）。每种算法的协商过程均为：从客户端的算法列表中取出第一个算法，在服务器端的列表中查找相应的算法，如果匹配上相同的算法，则该算法协商成功；否则继续从客户端算法列表中取出下一个算法，在服务器端的算法列表中匹配，直到匹配成功。如果客户端支持的算法全部匹配失败，则该算法协商失败。 某一种算法协商成功后，继续按照上述方法协商其他的算法，直到所有算法（这里是指密钥交换算法、加密算法等）都协商成功；如果某一种算法协商失败，则客户端和服务器之间的算法协商失败，服务器断开与客户端的连接。</p>
+<h3 id="密钥交换">密钥交换</h3>
+<p>加密算法协商成功后，为了保证加解密密钥的安全性，SSH利用上一步协商好的密钥交换算法在通信双方安全动态地生成和交互数据的加解密密钥，并能够有效防止第三方窃听加解密密钥。</p><img src="/2017/11/30/understanding-of-ssh/ssh3.gif"><img src="/2017/11/30/understanding-of-ssh/ssh4.gif">
+<p>由上图可以看出这里选择了使用Diffie-Hellman算法作为密钥交换算法，Diffie-Hellman算法的流程是这样的： 1. 双方共同选择一个大值素数作为种子值（seed value） 2. 双方共同选择一个加密生成器（通常是AES），用于后续的数值操作 3. 双方分别各自选择一个素数，该素数的值对对方保密，用于生成本次通讯的私钥（与SSH身份认证私钥无关） 4. 双方分别用各自的私钥、共同的加密生成器、和共同的素数生成各自的公钥 5. 双方将各自的公钥共享给对方 6. 双方用各自的私钥和对方发过来的公钥生成另一个密钥。根据该算法，双方各自计算出来的两个密钥是完全一样的，即“共同的秘密” 7. 该密钥被用于本次通讯所有内容的加密</p>
+<p>由上面的流程可以看出密钥交换的过程能够让双方平等的参与密钥生成的过程，而不是由单方掌握。这种共享密钥生成的过程是安全的，双方没有交换过任何未经加密的信息。</p>
+<h3 id="用户认证">用户认证</h3><img src="/2017/11/30/understanding-of-ssh/ssh5.gif">
+<p>如上图所示会话加密通道建立之后，后面的信息就都已经加密了，Wireshark就看不到有用的信息了。</p>
+<p>用户认证有两种方式：密码认证和公钥认证。</p>
+<h4 id="密码认证">密码认证</h4>
+<p>密码认证比较简单，就是客户端发送用户名和密码给服务端，服务端对用户名和密码进行匹配，完成认证。</p>
+<p>虽然前面已经建立了加密通道，密码不会在数据传输中被窃取，但是过于简单的密码还是容易被暴力破解，所有这种传统的认证方式不够安全。</p>
+<h4 id="公钥认证">公钥认证</h4>
+<p>公钥认证是基于非对称加密的，认证的前提是要先将客户端的公钥存储到服务端的<code>authorized_keys</code>文件中。Github上如果要使用基于SSH的git协议的话也需要将客户端的公钥添加到Github的后台。</p>
+<p>认证流程： 1. 客户端发起一个公钥的认证请求，并发送RSA Key的模数作为标识符。 2. 服务端检查是否存在请求帐号的公钥（Linux中存储在<code>~/.ssh/authorized_keys</code>文件中），以及其拥有的访问权限。如果没有则断开连接 3. 服务端使用对应的公钥对一个随机的256位的字符串进行加密，并发送给客户端 4. 客户端使用私钥对字符串进行解密，并将其结合会话id生成一个MD5值发送给服务端。 结合会话id的目的是为了避免攻击者采用重放攻击（replay attack）。 5. 服务端采用同样的方式生成MD5值与客户端返回的MD5值进行比较，完成对客户端的认证。</p>
+<p>简单来说，服务器端用公钥加密信息，客户端用私钥解密信息以证明自己持有私钥。该过程同时使用了对称加密和非对称加密，两种方式各有自己的功用。</p>
+<h3 id="服务请求">服务请求</h3>
+<p>SSH协议支持多种应用服务。用户成功完成认证后，SSH客户端向服务器端发起服务请求，请求服务器提供某种应用。 服务请求的过程为： 1. 客户端发送 <code>SSH_MSG_CHANNEL_OPEN</code> 消息，请求与服务器建立会话通道，即 session； 2. 服 务 器 端 收 到 <code>SSH_MSG_CHANNEL_OPEN</code> 消 息 后 ， 如 果 支 持 该 通 道 类型，则回复 <code>SSH_MSG_CHANNEL_OPEN_CONFIRMATION</code> 消息，从而建立会话通道； 3. 会话通道建立之后，客户端可以申请在通道上进行 shell 或 subsystem 类型的会话，分别对应 SSH 和 SFTP 两种类型的服务。</p>
+<h3 id="数据传输和连接关闭">数据传输和连接关闭</h3>
+<p>服务请求成功，建立会话后，服务器和客户端可以在该会话上进行数据的传输。客户端将要执行的命令加密后传给服务器，服务器接收到报文，解密后执行该命令，将执行的结果加密发送给客户端，客户端将接收到的结果解密后显示到终端上。 通信结束或用户空闲时间超时后，关闭会话，断开连接。</p>
+<p>参考文章： <a href="https://xianli1230.wordpress.com/2011/07/20/ssh%E5%8D%8F%E8%AE%AE%E5%B7%A5%E4%BD%9C%E8%BF%87%E7%A8%8B/" target="_blank" rel="noopener">理解SSH的加密与连接过程</a> <a href="http://blog.csdn.net/zstack_org/article/details/53100545" target="_blank" rel="noopener">SSH协议工作过程</a> <a href="http://erik-2-blog.logdown.com/posts/74081-ssh-principle" target="_blank" rel="noopener">SSH原理简介</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;说到SSH，我们很多人都用过，比如我们通过git提交代码到Github的时候需要先添加本机的public key到Github网站，使用SSH远程连接VPS来对服务器进行操作。但是SSH究竟是什么，它是如何工作的呢？&lt;/p&gt;
+&lt;h2 id=&quot;定义&quot;&gt;定义&lt;/h2&gt;
+&lt;p&gt;S
+    
+    </summary>
+    
+    
+      <category term="Web" scheme="http://skx926.me/tags/Web/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>解决Storyboard中设置的颜色和代码设置的颜色不一样的问题</title>
+    <link href="http://skx926.me/2017/06/29/xcode-device-rgb/"/>
+    <id>http://skx926.me/2017/06/29/xcode-device-rgb/</id>
+    <published>2017-06-29T06:15:35.000Z</published>
+    <updated>2020-03-21T04:26:05.544Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近发现在Storyboard中设置的颜色和用代码设置的颜色居然不一样，当时我就震惊了！</p>
+<p>更让人震惊的是搞了这么多年iOS开发，居然现在才发现！惭愧啊。。。</p>
+<p>网上查了一下才知道原来Xcode里的色彩选择器默认的Color Profile是<code>Generic RGB</code>，如下图所示：</p>
+<img src="/2017/06/29/xcode-device-rgb/color-picker.jpg">
+<p>把它改为<code>Device RGB</code>就可以解决这个问题了。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近发现在Storyboard中设置的颜色和用代码设置的颜色居然不一样，当时我就震惊了！&lt;/p&gt;
+&lt;p&gt;更让人震惊的是搞了这么多年iOS开发，居然现在才发现！惭愧啊。。。&lt;/p&gt;
+&lt;p&gt;网上查了一下才知道原来Xcode里的色彩选择器默认的Color Profile是&lt;cod
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>利用Pinch和Pan手势实现UIView的缩放和拖拽</title>
+    <link href="http://skx926.me/2017/06/21/custom-scalable-view/"/>
+    <id>http://skx926.me/2017/06/21/custom-scalable-view/</id>
+    <published>2017-06-21T06:25:01.000Z</published>
+    <updated>2020-03-21T04:26:05.431Z</updated>
+    
+    <content type="html"><![CDATA[<p>先来看下我们要实现的效果：</p>
+<figure>
+<img src="https://raw.githubusercontent.com/skx926/ScalableViewDemo/master/Demo.gif" alt=""><figcaption>Demo</figcaption>
+</figure>
+<p>其实这个效果UIScrollView已经自带了，但是某些情况下由于某些原因我们可能不能或者不想使用UIScrollView，那么我们就得自己实现这个效果。</p>
+<p>如果要单独用Pinch手势实现缩放或者用Pan手势实现拖拽，这个比较简单，直接贴代码：</p>
+<figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 利用Pinch手势实现缩放</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">didPinch</span><span class="params">(<span class="number">_</span> pinch: UIPinchGestureRecognizer)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> pinch.state != .changed &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> scale = pinch.scale</span><br><span class="line">    <span class="keyword">let</span> scaleTransform = imageView.transform.scaledBy(x: scale, y: scale)</span><br><span class="line">    imageView.transform = scaleTransform</span><br><span class="line">    pinch.scale = <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 利用Pan手势实现拖拽</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">didPan</span><span class="params">(<span class="number">_</span> pan: UIPanGestureRecognizer)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> pan.state != .changed &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> scale = imageView.frame.size.width / initialFrame.size.width</span><br><span class="line">    <span class="keyword">let</span> translation = pan.translation(<span class="keyword">in</span>: view)</span><br><span class="line">    <span class="keyword">let</span> transform = imageView.transform.translatedBy(x: translation.x / scale, y: translation.y / scale)</span><br><span class="line">    imageView.transform = transform</span><br><span class="line">    pan.setTranslation(.zero, <span class="keyword">in</span>: view)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>确实是很简单，但是从不同位置缩放一下图片你就会发现不论你的手指在什么位置，图片总是以中心为基准进行放大缩小，感觉很不自然。这是为什么呢？因为我们上面的代码只是单纯根据手势的scale对图片进行了缩放，根本没有考虑到手指的位置。要有良好的缩放体验，一般来说都需要以<code>两指的中心点</code>为基准来进行缩放。这样的话我们就需要在缩放的过程中对图片再增加一个偏移，那么这个偏移的值具体是多少呢？我们来看一张图：</p>
+<img src="/2017/06/21/custom-scalable-view/position.png">
+<p>如上图所示，假设我们有一个初始状态的View为A，他的中心点为a，我们以点b为基准把A放大一倍，理想的结果就是C，缩放的基准点b点不会发生位移。</p>
+<p>我们可以把这个过程拆分成两个步骤： 1. 把A放大一倍至B 2. 给B添加偏移 (x, y) 至C</p>
+<p>那么偏移(x, y)怎么求得呢？</p>
+<p>根据上图我们可以计算出基准点b相对于中心点a的偏移(dx, dy)： <figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="comment">// location为Pinch手势的中心点b</span></span><br><span class="line"><span class="keyword">let</span> dx = imageView.frame.midX - location.x</span><br><span class="line"><span class="keyword">let</span> dy = imageView.frame.midY - location.y</span><br></pre></td></tr></table></figure></p>
+<p>然后计算出放大之后的基准点b相对于中心点a的偏移(sdx, sdy)： <figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="comment">// scale为缩放的比例</span></span><br><span class="line"><span class="keyword">let</span> sdx = dx * scale</span><br><span class="line"><span class="keyword">let</span> sdy = dy * scale</span><br></pre></td></tr></table></figure></p>
+<p>由图可得(x, y)为上面的两项的差： <figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> x = sdx - dx</span><br><span class="line"><span class="keyword">let</span> y = sdy - dy</span><br></pre></td></tr></table></figure></p>
+<p>最终的代码如下： <figure class="highlight swift"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">didPinch</span><span class="params">(<span class="number">_</span> pinch: UIPinchGestureRecognizer)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> pinch.state != .changed &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">let</span> scale = pinch.scale</span><br><span class="line">    <span class="keyword">let</span> location = pinch.location(<span class="keyword">in</span>: view)</span><br><span class="line">    <span class="keyword">let</span> scaleTransform = imageView.transform.scaledBy(x: scale, y: scale)</span><br><span class="line">    imageView.transform = scaleTransform</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">let</span> dx = imageView.frame.midX - location.x</span><br><span class="line">    <span class="keyword">let</span> dy = imageView.frame.midY - location.y</span><br><span class="line">    <span class="keyword">let</span> x = dx * scale - dx</span><br><span class="line">    <span class="keyword">let</span> y = dy * scale - dy</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 这样的话计算会有错误</span></span><br><span class="line">    <span class="comment">//imageView.transform = imageView.transform.translatedBy(x: x, y: y);</span></span><br><span class="line"> </span><br><span class="line">    <span class="keyword">let</span> translationTransform = <span class="type">CGAffineTransform</span>(translationX: x, y: y)</span><br><span class="line">    imageView.transform = imageView.transform.concatenating(translationTransform)</span><br><span class="line"> </span><br><span class="line">    pinch.scale = <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里有个比较坑的地方就是给<code>imageView</code>应用完ScaleTransform之后直接使用<code>public func translatedBy(x tx: CGFloat, y ty: CGFloat) -&gt; CGAffineTransform</code>方法增加偏移的时候的结果与我们预期的不一样。</p>
+<p>比如说我们的<code>imageView</code>初始状态的frame是<code>(x: 100, y: 100, width: 100, height: 100)</code>, 缩放的时候以左上角点b为基准，使用ScaleTransform放大一倍之后变为<code>(x: 0, y: 0, width: 200, height: 200)</code>，然后我们通过<code>translatedBy</code>方法偏移之后得到的frame为<code>(x: 200, y: 200, width: 200, height: 200)</code>, 这个结果与我们所期望的<code>(x: 100, y: 100, width: 200, height: 200)</code>有所不同。而使用<code>concatenating</code>方法就不会有问题，按照我的理解，这两个方法应该产生同样的结果才对。如果你知道其中的原因，欢迎在下面留言。</p>
+<p>文章里提到的内容我已经写了一个Demo欢迎<a href="https://github.com/skx926/ScalableViewDemo" target="_blank" rel="noopener">点击此处</a>进行下载查看。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;先来看下我们要实现的效果：&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&quot;https://raw.githubusercontent.com/skx926/ScalableViewDemo/master/Demo.gif&quot; alt=&quot;&quot;&gt;&lt;figcaption&gt;Demo&lt;/
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>获取App Store下载的Xcode安装包</title>
+    <link href="http://skx926.me/2017/06/09/appstore-download-path/"/>
+    <id>http://skx926.me/2017/06/09/appstore-download-path/</id>
+    <published>2017-06-09T03:49:58.000Z</published>
+    <updated>2020-03-21T04:26:05.415Z</updated>
+    
+    <content type="html"><![CDATA[<p>通过 App Store 下载安装 Xcode 的时候可能会遇到各种奇葩的事情。</p>
+<p>这不，我刚才就摊上事了：用公司的渣网络辛辛苦苦下载两个多小时眼看开始安装了结果弹框提示我说空间不足无法继续安装。既然空间不足咱就清理一下呗，清理完了之后想要继续安装发现没有办法重新开始安装，App Store 里的按钮显示 <code>发生错误</code>，<code>/Applications</code> 文件加下的 <code>Xcode.appdownload</code> 文件双击也没有任何反应，真是哔了狗了！</p>
+<p>如果是下载还在进行，我们就可以根据<a href="http://www.cnblogs.com/On1Key/p/6169878.html" target="_blank" rel="noopener">这篇文章</a> 所说的方法通过在活动监视器中查看进程 <code>storedownloadd</code> 打开的文件和端口中找到安装包的路径。</p>
+<img src="/2017/06/09/appstore-download-path/activity1.png">
+<img src="/2017/06/09/appstore-download-path/activity2.png">
+<p>但是我已经下载完了，文件应该已经关闭了，所以这个方法可能用不了了。但是我们可以照葫芦画瓢，根据文章中提供的路径 <code>/private/var/folders/xx/xxxxx/C/com.apple.appstore/xxx/xxxx.pkg</code> 直接到 <code>/private/var/folders</code> 文件夹下去寻找。</p>
+<img src="/2017/06/09/appstore-download-path/folders.png">
+<p>最终我们发现了上图所示的文件，重点是文件的大小 <code>4.54GB</code>，跟在 App Store 下载时看到的大小相同，双击打开进行安装即可。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;通过 App Store 下载安装 Xcode 的时候可能会遇到各种奇葩的事情。&lt;/p&gt;
+&lt;p&gt;这不，我刚才就摊上事了：用公司的渣网络辛辛苦苦下载两个多小时眼看开始安装了结果弹框提示我说空间不足无法继续安装。既然空间不足咱就清理一下呗，清理完了之后想要继续安装发现没有办法重
+    
+    </summary>
+    
+    
+      <category term="Mac技巧" scheme="http://skx926.me/tags/Mac%E6%8A%80%E5%B7%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>制作服务端推送时使用的.pem证书</title>
+    <link href="http://skx926.me/2017/06/01/apns-certificates/"/>
+    <id>http://skx926.me/2017/06/01/apns-certificates/</id>
+    <published>2017-06-01T09:45:41.000Z</published>
+    <updated>2020-03-21T04:26:05.415Z</updated>
+    
+    <content type="html"><![CDATA[<p>服务端要给移动端发送推送消息就需要用到推送证书，但是服务端通常需要的证书 <code>.pem</code> 格式的，并不是我们从Apple的开发者中心下载到的 <code>.cer</code> 格式的文件，所以我们需要对其做一个转换。</p>
+<p>申请推送证书的过程我就不赘述了，这里假设你已经申请好了开发环境和生产环境的推送证书并下载导入到 Mac 钥匙串当中。</p>
+<p>下面我们开始转换，这里我以开发环境为例，生产环境同理：</p>
+<ol type="1">
+<li><p>从钥匙串中分别导出 <code>Apple Development iOS Push Serives</code> 证书和私钥为 <code>cer.p12</code> 和 <code>key.p12</code>（导出的时候会提示输入密码，可以随便设置一个）</p></li>
+<li><p>使用 openssl 将 <code>cer.p12</code> 和 <code>key.p12</code> 转换为 <code>cer.pem</code> 和 <code>key.pem</code>： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ openssl pkcs12 -clcerts -nokeys -out cer.pem -in cer.p12</span><br><span class="line">$ openssl pkcs12 -nocerts -out key.pem -in key.p12</span><br></pre></td></tr></table></figure></p>
+<p>转换的时候会提示输入刚才导出的时候设置的密码。转换私钥的时候还会要求你输入一个新的密码，设置的这个新的密码在服务端连接 APNS 服务器时需要使用。</p></li>
+<li><p>测试生成的文件是否可用： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">// 生产环境请使用 gateway.push.apple.com:2195</span><br><span class="line">$ openssl s_client -connect gateway.sandbox.push.apple.com:2195 -cert cer.pem -key key.pem</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令执行之后会有一大堆的信息输出，我们查看最底部的信息： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">SSL-Session:</span><br><span class="line">    Protocol  : TLSv1</span><br><span class="line">    Cipher    : AES256-SHA</span><br><span class="line">    Session-ID: </span><br><span class="line">    Session-ID-ctx: </span><br><span class="line">    Master-Key: 13BFA2DC5D6550B06BB351A0A16AC1F9CFE343EEC02F71C45F1F451613D689ED507B4445160C10589ECEFEDD6EBF60CD</span><br><span class="line">    Key-Arg   : None</span><br><span class="line">    Start Time: 1496308341</span><br><span class="line">    Timeout   : 300 (sec)</span><br><span class="line">    Verify <span class="built_in">return</span> code: 0 (ok)</span><br><span class="line">---</span><br></pre></td></tr></table></figure></p>
+<p>最后一行输出为 <code>Verify return code: 0 (ok)</code> 即为测试通过。</p></li>
+<li><p>合并证书和私钥。服务端在使用时只需要一个文件，所以我们需要将 <code>cer.pem</code> 和 <code>key.pem</code> 合并成一个 <code>ck.pem</code> 文件： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ cat cer.pem key.pem &gt; ck.pem</span><br></pre></td></tr></table></figure></p></li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;服务端要给移动端发送推送消息就需要用到推送证书，但是服务端通常需要的证书 &lt;code&gt;.pem&lt;/code&gt; 格式的，并不是我们从Apple的开发者中心下载到的 &lt;code&gt;.cer&lt;/code&gt; 格式的文件，所以我们需要对其做一个转换。&lt;/p&gt;
+&lt;p&gt;申请推送证书的过程我
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>嵌套UIScrollView滑动手势冲突的解决</title>
+    <link href="http://skx926.me/2017/05/28/nested-scrollview-scrolling-conflit/"/>
+    <id>http://skx926.me/2017/05/28/nested-scrollview-scrolling-conflit/</id>
+    <published>2017-05-28T02:55:23.000Z</published>
+    <updated>2020-03-21T04:26:05.456Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="问题">问题</h2>
+<p>最近有有朋友在Github上提出issue说 <a href="https://github.com/skx926/KSPhotoBrowser/issues/14" target="_blank" rel="noopener">KSPhotoBrowser</a> 在图片长度超出屏幕大小多时候没有办法通过拖拽返回。其实这个问题从我开始开发的时候就存在，感觉影响不是很大就一直拖着没解决。既然有人提出来了，那看来是必须得解决一下了。。。</p>
+<img src="/2017/05/28/nested-scrollview-scrolling-conflit/normal.gif">
+<img src="/2017/05/28/nested-scrollview-scrolling-conflit/abnormal.gif">
+<p>第一张图就是正常的拖拽返回，第二张有问题。</p>
+<h2 id="解决">解决</h2>
+<p>要解决这个问题我们不得不说下 <a href="https://github.com/skx926/KSPhotoBrowser" target="_blank" rel="noopener">KSPhotoBrowser</a> 的布局结构，先来看一张图：</p>
+<img src="/2017/05/28/nested-scrollview-scrolling-conflit/layout.jpg">
+<p>如上图所示，一个父 UIScrollView 里面添加了多个子 UIScrollView，每个子 UIScrollView 里包含一个 UIImageView 来显示图片，可以通过左右滑动父 UIScrollView 来查看不同的图片。单击、双击和拖动手势是添加在父 UIScrollView 的 SuperView 上，也就是 ViewController 的根 View 之上。</p>
+<p>当图片的高宽比小于屏幕大高宽比的时候，拖动手势可以正常触发（如上图1所示）。但是当图片的高宽比大于屏幕的高宽比的时候（也就是图片比较长），拖动手势就无法正常触发（如上图2所示）。</p>
+<p>经过查看 UIScrollView 的头文件发现 UIScrollView 内部也有一个拖动手势:</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Use these accessors to configure the scroll view's built-in gesture recognizers.</span></span><br><span class="line"><span class="comment">// Do not change the gestures' delegates or override the getters for these properties.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Change `panGestureRecognizer.allowedTouchTypes` to limit scrolling to a particular set of touch types.</span></span><br><span class="line"><span class="keyword">@property</span>(<span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">UIPanGestureRecognizer</span> *panGestureRecognizer <span class="built_in">NS_AVAILABLE_IOS</span>(<span class="number">5</span>_0);</span><br></pre></td></tr></table></figure>
+<p>所以当我们往下拖动的时候 UIScrollView 的拖动手势拦截了事件，使其无法传递给下方的 View 上的手势。那我们能不能根据滑动时 UIScrollView 的 <code>contentOffset</code> 和滑动的方向来决定触发哪一个手势呢？答案是肯定的，通过查看 UIGestureRecognizer 的头文件我们发现下面这个代理方法：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// called when a gesture recognizer attempts to transition out of UIGestureRecognizerStatePossible. returning NO causes it to transition to UIGestureRecognizerStateFailed</span></span><br><span class="line">- (<span class="built_in">BOOL</span>)gestureRecognizerShouldBegin:(<span class="built_in">UIGestureRecognizer</span> *)gestureRecognizer;</span><br></pre></td></tr></table></figure>
+<p>利用这个方法我们就可以在手势识别阶段 <code>UIGestureRecognizerStatePossible</code> 根据 UIScrollView 的 <code>contentOffset</code> 和滑动的方向来决定要不要触发 UIScrollView 的手势，如果我们 <code>return NO</code>，事件就会正常传递给下面的 View 上的手势，从而解决问题。</p>
+<p>所以现在我们使持有 UIImageView 的 KSPhotoView 继承自 UIScrollView 并重写 UIScrollView 的拖动手势的代理方法，代码如下：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 判断scrollView是不是在最顶部往下滑或者在最底部往上滑，如果是这两种情况才需要把事件往下传递</span></span><br><span class="line">- (<span class="built_in">BOOL</span>)isScrollViewOnTopOrBottom &#123;</span><br><span class="line">    <span class="built_in">CGPoint</span> translation = [<span class="keyword">self</span>.panGestureRecognizer translationInView:<span class="keyword">self</span>];</span><br><span class="line">    <span class="keyword">if</span> (translation.y &gt; <span class="number">0</span> &amp;&amp; <span class="keyword">self</span>.contentOffset.y &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">CGFloat</span> maxOffsetY = floor(<span class="keyword">self</span>.contentSize.height - <span class="keyword">self</span>.bounds.size.height);</span><br><span class="line">    <span class="keyword">if</span> (translation.y &lt; <span class="number">0</span> &amp;&amp; <span class="keyword">self</span>.contentOffset.y &gt;= maxOffsetY) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#pragma mark - GestureRecognizerDelegate</span></span><br><span class="line"></span><br><span class="line">- (<span class="built_in">BOOL</span>)gestureRecognizerShouldBegin:(<span class="built_in">UIGestureRecognizer</span> *)gestureRecognizer &#123;</span><br><span class="line">    <span class="keyword">if</span> (gestureRecognizer == <span class="keyword">self</span>.panGestureRecognizer) &#123;</span><br><span class="line">        <span class="keyword">if</span> (gestureRecognizer.state == <span class="built_in">UIGestureRecognizerStatePossible</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> ([<span class="keyword">self</span> isScrollViewOnTopOrBottom]) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行一下代码发现问题完美解决：</p>
+<img src="/2017/05/28/nested-scrollview-scrolling-conflit/nice.gif">
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;问题&quot;&gt;问题&lt;/h2&gt;
+&lt;p&gt;最近有有朋友在Github上提出issue说 &lt;a href=&quot;https://github.com/skx926/KSPhotoBrowser/issues/14&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;KS
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Xcode多Target下本地化App名称</title>
+    <link href="http://skx926.me/2017/05/25/multi-target-localization/"/>
+    <id>http://skx926.me/2017/05/25/multi-target-localization/</id>
+    <published>2017-05-25T04:43:00.000Z</published>
+    <updated>2020-03-21T04:26:05.446Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="target">Target</h2>
+<p>可能很多人都会有开发多个相似的App的需求，这些相似的App可能也就是名称、BundleID、证书配置不同，其他的功能都基本一样。对于这种情况的处理，一种比较笨的办法就是手动修改 <code>Info.plist</code> 文件中相应的内容，打包完了之后再次修改再打包。这种方法如果只是搞一次也不会麻烦很多，但是如果多搞几次，谁都会觉得烦，况且在修改的过程中还有可能会出错。那有没有什么更好的办法呢？答案是：使用 <code>Target</code>。</p>
+<p>那么什么是 Target 呢？简单点说，一个 Target 描述了一个产品的属性并且包含了产品所需要的一系列文件。而一个 Project 中就包含多是一个或者多个产品所需要的文件、资源、信息等。所以一个Project可以包含多个 Target，你可以在一个 Target 中对 Project 中包含的文件、资源和信息进行不同的组合从而生成不同的产品。</p>
+<h2 id="多target下本地化app名称">多Target下本地化App名称</h2>
+<p>对于单个Target下App名称的本地化比较简单，我这里就不赘述了，我们来看一下多Target下怎么本地化App的名称：</p>
+<p>首先创建一个名为 <code>LocalizationDemo</code> 的项目，创建完成之后如下图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image0.png" title="创建项目">
+<p>Xcode默认创建了一个名为 <code>LocalizationDemo</code> 的 Target，我们修改它的名字为 <code>Product1</code> 并在修改后的名字上点击右键选择 <code>Duplicate</code> 复制一个 Target（在弹出的对话框中选择Duplicate Only），这样就会创建一个名为 <code>Product1 copy</code>的 Target，同时会创建一个名为 <code>Product1 copy-Info.plist</code> 文件，我们将建的 Target 的名字修改为 <code>Product2</code>，结果如下图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image1.png" title="创建Target">
+<p>这个自动创建的 <code>Product1 copy-Info.plist</code> 文件在 <code>$(SRCROOT)</code>(工程文件.xcodeproj文件所在目录)目录下，而 <code>Info.plist</code> 文件则在 <code>$(SRCROOT)/LocalizationDemo</code> 目录下。为了统一起见，我们把 <code>Product1 copy-Info.plist</code> 文件移动到 <code>$(SRCROOT)/LocalizationDemo</code> 目录下并改名为 <code>Product2-Info.plist</code>，同时修改 <code>Info.plist</code> 文件名为 <code>Product1-Info.plist</code>。结果如下图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image2.png" title="修改InfoPlist路径">
+<p>由于我们修改了 <code>Info.plist</code> 文件的名称和路径，Xcode表示找不到它了，所以 <code>Identity</code> 那里会出现一个名叫 <code>Choose Info.plist file</code> 的按钮，我们分别点击两个Target中的按钮选择对应的文件，完成之后如下图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image3.png" title="重新选择文件">
+<p>现在我们添加需要本地化的语言，这里作为演示就只选择一个简体中文，添加完后效果如图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image4.png" title="添加需要本地化的语言">
+<p>对于单个Target的App名称的本地化我们只需要在项目中新建一个 <code>InfoPlist.strings</code> 文件对不同的语言设置不同的 <code>CFBundleDisplayName</code> 就可以了。但是这里有个问题就是 <code>InfoPlist.strings</code> 文件的名称是固定的，它不像 <code>Info.plist</code> 文件一样可以用不同的名称，然后在 <code>Build Setting</code> 中给不同的 Target 设置不同的 <code>Info.plist File</code> 路径和名称就可以了。</p>
+<p>幸运的是我们可以通过建立多个不同路径下的 <code>InfoPlist.strings</code> 文件来实现对多个 Target 下的App名称进行本地化。我们在 <code>$(SRCROOT)/LocalizationDemo</code> 目录下分别建立 <code>Product1</code> 和 <code>Product2</code> 两个文件夹，分别包含一个 <code>InfoPlist.strings</code> 文件，效果如下图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image5.png" title="创建多个目录">
+<p>然后我们分别将两个文件夹添加到项目中来，添加的时候注意勾选对应的Target：</p>
+<img src="/2017/05/25/multi-target-localization/image6.png" title="添加目录到项目">
+<p>添加完成之后我们分别在两个InfoPlist.strings文件中添加 <code>CFBundleDisplayName = "Product Name";</code> 对应的名称，结果如下图所示：</p>
+<img src="/2017/05/25/multi-target-localization/image7.png" title="添加目录之后">
+<p>然后我们点击右侧的 <code>Localize</code> 按钮分别对两个 <code>InfoPlist.strings</code> 文件进行本地化，勾选需要的语言并修改不同语言下对应的名称，这里我设置 Product1 的英文名为 <code>Product1</code>、中文名为<code>产品1</code>，Product2 的英文名为 <code>Product2</code>、中文名为<code>产品2</code>：</p>
+<img src="/2017/05/25/multi-target-localization/image8.png" title="修改Bundle Display Name">
+<p>到这里我们的目的基本上已经达成了，但是我们运行之前发现虽然改了Target的名称，但是左上角的 Scheme 的名称并没有变化，看起来很不爽。单击 Scheme 名称然后选择 <code>Manage Schemes</code>, 然后修改 <code>LocalizationDemo</code> 为 <code>Product1</code>，<code>Product1 copy</code> 为 <code>Product2</code>。修改完效果如下图：</p>
+<img src="/2017/05/25/multi-target-localization/image9.png" title="修改Scheme">
+<p>All done! 赶紧选择不同的 Scheme 运行一下然后把系统切换到不同的语言看看是不是成功了！</p>
+<p>根据本文创建的示例项目我已经上传到了 Github 上，欢迎下载查看：</p>
+<p><a href="https://github.com/skx926/Multi-TargetLocalizationDemo" target="_blank" rel="noopener">Multi-TargetLocalizationDemo</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;target&quot;&gt;Target&lt;/h2&gt;
+&lt;p&gt;可能很多人都会有开发多个相似的App的需求，这些相似的App可能也就是名称、BundleID、证书配置不同，其他的功能都基本一样。对于这种情况的处理，一种比较笨的办法就是手动修改 &lt;code&gt;Info.plist&lt;/c
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>检测iOS设备是否连接VPN</title>
+    <link href="http://skx926.me/2017/05/24/check-vpn-connectivity/"/>
+    <id>http://skx926.me/2017/05/24/check-vpn-connectivity/</id>
+    <published>2017-05-24T05:42:39.000Z</published>
+    <updated>2020-03-21T04:26:05.428Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="前言废话">前言（废话）</h2>
+<p>最近接到一个限制我司国内版的产品在国外的使用App的需求，其实也就是让这种“水货”的产品在国外无法连接我们的App。</p>
+<p>为了达到这个目的，首先需要从产品中获取它的序列号来判断它是否属于国内版，然后根据手机的定位判断是否在国外，如果两个条件同时满足就断开连接。</p>
+<p>为了判断手机的定位是否在国外有以下两种方法： 1. 根据手机的GPS定位坐标反地理编码获取国家代码判断是否是CN。 2. 后台接口根据手机的IP来判断是否在国外。</p>
+<p>这两种方式都有缺陷，第一种可以通过模拟定位到国内的方式来避开，第二种可以通过连接服务器在国内的VPN来避开。上面提这需求的时候也没说要100%封死，况且一般人也不一定会想到这个办法，所以第一版就以这两种方式结合的形式发布了。</p>
+<p>事实证明在利益面前，国外的人民群众也能充分发挥他们的“聪明才智”。没过多久市场部的同事就反馈说在国外的用户之间已经流行开使用VPN的方式了，导致我们的限制形同虚设。</p>
+<p>既然使用IP验证的方式已经被成功避开，那么GPS定位的方式也没啥难度，虽说现在iOS越狱的人是越来越少了，但是安卓的root还是很容易的。所以看来以正常的方式是没办法了，所以我们想到通过检测是否连接VPN的方式来预判断，如果连接了VPN就不让它连接，没有连接的情况下再通过IP的方式来进行判断。这样做虽然牺牲了一些经常挂VPN的人的体验，但是却可以很方便的实现需求。</p>
+<h2 id="检测vpn是否连接">检测VPN是否连接</h2>
+<p>检测的方式就是利用 <code>getifaddrs()</code> 函数来获取当前的所有的网络接口，寻找有没有包含 <code>tap</code>、<code>tun</code> 或 <code>ppp</code>，如果包含了其中的任何一个，就说明VPN已经连接了，代码如下：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#include <span class="meta-string">&lt;ifaddrs.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">- (<span class="built_in">BOOL</span>)isVPNConnected &#123;</span><br><span class="line">    <span class="keyword">struct</span> ifaddrs *interfaces = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">struct</span> ifaddrs *temp_addr = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int</span> success = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// retrieve the current interfaces - returns 0 on success</span></span><br><span class="line">    success = getifaddrs(&amp;interfaces);</span><br><span class="line">    <span class="keyword">if</span> (success == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// Loop through linked list of interfaces</span></span><br><span class="line">        temp_addr = interfaces;</span><br><span class="line">        <span class="keyword">while</span> (temp_addr != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            <span class="built_in">NSString</span> *string = [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%s"</span> , temp_addr-&gt;ifa_name];</span><br><span class="line">            <span class="keyword">if</span> ([string rangeOfString:<span class="string">@"tap"</span>].location != <span class="built_in">NSNotFound</span> ||</span><br><span class="line">                [string rangeOfString:<span class="string">@"tun"</span>].location != <span class="built_in">NSNotFound</span> ||</span><br><span class="line">                [string rangeOfString:<span class="string">@"ppp"</span>].location != <span class="built_in">NSNotFound</span>)&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            temp_addr = temp_addr-&gt;ifa_next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Free memory</span></span><br><span class="line">    freeifaddrs(interfaces);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的代码在iOS9之后不管用了，不过我们可以通过下面的方式来检测：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">BOOL</span>)isVPNConnected</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">NSDictionary</span> *dict = <span class="built_in">CFBridgingRelease</span>(<span class="built_in">CFNetworkCopySystemProxySettings</span>());</span><br><span class="line">        <span class="built_in">NSArray</span> *keys = [dict[<span class="string">@"__SCOPED__"</span>]allKeys];</span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">NSString</span> *key <span class="keyword">in</span> keys) &#123;</span><br><span class="line">            <span class="keyword">if</span> ([key rangeOfString:<span class="string">@"tap"</span>].location != <span class="built_in">NSNotFound</span> ||</span><br><span class="line">                [key rangeOfString:<span class="string">@"tun"</span>].location != <span class="built_in">NSNotFound</span> ||</span><br><span class="line">                [key rangeOfString:<span class="string">@"ppp"</span>].location != <span class="built_in">NSNotFound</span>)&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;前言废话&quot;&gt;前言（废话）&lt;/h2&gt;
+&lt;p&gt;最近接到一个限制我司国内版的产品在国外的使用App的需求，其实也就是让这种“水货”的产品在国外无法连接我们的App。&lt;/p&gt;
+&lt;p&gt;为了达到这个目的，首先需要从产品中获取它的序列号来判断它是否属于国内版，然后根据手机的定位
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>让Mac终端自动补全忽略大小写</title>
+    <link href="http://skx926.me/2017/05/20/terminal-autocomplete/"/>
+    <id>http://skx926.me/2017/05/20/terminal-autocomplete/</id>
+    <published>2017-05-20T03:55:33.000Z</published>
+    <updated>2020-03-21T04:26:05.537Z</updated>
+    
+    <content type="html"><![CDATA[<p>Mac自带的 <code>Terminal.app</code> 已经有自动补全功能，但是需要区分大小写。只需要在用户目录下修改 <code>.inputrc</code> 文件的配置就可以让它忽略大小写。具体操作如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ vi ~/.inputrc</span><br></pre></td></tr></table></figure>
+<p>然后在里面添加下面的内容：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">set</span> completion-ignore-case on</span><br><span class="line"><span class="built_in">set</span> show-all-if-ambiguous on</span><br><span class="line">TAB: menu-complete</span><br></pre></td></tr></table></figure>
+<p>保存后重新打开终端就可以使用 <code>Tab</code> 键愉快的使用了。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Mac自带的 &lt;code&gt;Terminal.app&lt;/code&gt; 已经有自动补全功能，但是需要区分大小写。只需要在用户目录下修改 &lt;code&gt;.inputrc&lt;/code&gt; 文件的配置就可以让它忽略大小写。具体操作如下：&lt;/p&gt;
+&lt;figure class=&quot;highlig
+    
+    </summary>
+    
+    
+      <category term="Mac技巧" scheme="http://skx926.me/tags/Mac%E6%8A%80%E5%B7%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>使用Trunk发布开源库到Cocoapods</title>
+    <link href="http://skx926.me/2017/05/16/publish-to-cocoapods/"/>
+    <id>http://skx926.me/2017/05/16/publish-to-cocoapods/</id>
+    <published>2017-05-16T08:49:20.000Z</published>
+    <updated>2020-03-21T04:26:05.503Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="注册">注册</h3>
+<h5 id="安装cocoapods">安装Cocoapods</h5>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo gem install cocoapods</span><br><span class="line">$ pod setup</span><br></pre></td></tr></table></figure>
+<p><code>pod setup</code> 的过程就是把 <a href="https://github.com/CocoaPods/Specs.git" target="_blank" rel="noopener">Cocoapods/Specs</a> 克隆到本地的过程，由于这个库包含了所有发布到 Cocoapods的开源库的说明，现在已经有数百兆的大小了，而且由于某众所周知的原因，这个过程会比较慢，需要耐心等待。</p>
+<h5 id="注册trunk">注册Trunk</h5>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod trunk register skx926@gmail.com <span class="string">'Kyle Sun'</span> --description=<span class="string">'iMac'</span> --verbose</span><br></pre></td></tr></table></figure>
+<p>这个是我注册时用的命令，使用时需要把邮箱和名字以及描述修改成你的。这个描述是用来区分不同的设备的，如果你有多台开发设备，它就可以说明你是使用哪一台设备进行的操作。</p>
+<p>注册成功之后Cocoapods会给你发送邮件，点击邮件中的链接进行验证就注册成功了，可以使用 <code>pod trunk me</code> 来查看自己的注册信息：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod trunk me</span><br><span class="line">  - Name:     Kyle Sun</span><br><span class="line">  - Email:    skx926@gmail.com</span><br><span class="line">  - Since:    January 3rd, 03:28</span><br><span class="line">  - Pods:</span><br><span class="line">    - KSPhotoBrowser</span><br><span class="line">    - KSGuideController</span><br><span class="line">  - Sessions:</span><br><span class="line">    - January 3rd, 03:28 - September 19th, 20:57. IP: 113.87.161.243</span><br><span class="line">    Description: skx926</span><br><span class="line">    - January 3rd, 08:29 -       May 19th, 18:01. IP: 36.36.186.238 </span><br><span class="line">    Description: hackintosh</span><br><span class="line">    - May 19th, 22:45    - September 24th, 22:45. IP: 36.36.187.9   </span><br><span class="line">    Description: iMac</span><br></pre></td></tr></table></figure>
+<h3 id="部署你的pod">部署你的Pod</h3>
+<p>首先需要在项目目录下建立一个 <code>podspec</code> 文件：</p>
+<figure class="highlight ruby"><table><tr><td class="code"><pre><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  Be sure to run `pod spec lint KSGuideController.podspec' to ensure this is a</span></span><br><span class="line"><span class="comment">#  valid spec and to remove all comments including this before submitting the spec.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  To learn more about Podspec attributes see http://docs.cocoapods.org/specification.html</span></span><br><span class="line"><span class="comment">#  To see working Podspecs in the CocoaPods repo see https://github.com/CocoaPods/Specs/</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"></span><br><span class="line">Pod::Spec.new <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ―――  Spec Metadata  ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  These will help people to find your library, and whilst it</span></span><br><span class="line">  <span class="comment">#  can feel like a chore to fill in it's definitely to your advantage. The</span></span><br><span class="line">  <span class="comment">#  summary should be tweet-length, and the description more in depth.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  s.name         = <span class="string">"KSGuideController"</span></span><br><span class="line">  s.version      = <span class="string">"0.0.1"</span></span><br><span class="line">  s.summary      = <span class="string">"A beautiful animated novice guide controller."</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># This description is used to generate tags and improve search results.</span></span><br><span class="line">  <span class="comment">#   * Think: What does it do? Why did you write it? What is the focus?</span></span><br><span class="line">  <span class="comment">#   * Try to keep it short, snappy and to the point.</span></span><br><span class="line">  <span class="comment">#   * Write the description between the DESC delimiters below.</span></span><br><span class="line">  <span class="comment">#   * Finally, don't worry about the indent, CocoaPods strips it!</span></span><br><span class="line">  <span class="comment"># s.description  = &lt;&lt;-DESC</span></span><br><span class="line">  <span class="comment">#               DESC</span></span><br><span class="line"></span><br><span class="line">  s.homepage     = <span class="string">"https://github.com/skx926/KSGuideController"</span></span><br><span class="line">  <span class="comment"># s.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ―――  Spec License  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  Licensing your code is important. See http://choosealicense.com for more info.</span></span><br><span class="line">  <span class="comment">#  CocoaPods will detect a license file if there is a named LICENSE*</span></span><br><span class="line">  <span class="comment">#  Popular ones are 'MIT', 'BSD' and 'Apache License, Version 2.0'.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  s.license      = <span class="string">"MIT"</span></span><br><span class="line">  <span class="comment"># s.license      = &#123; :type =&gt; "MIT", :file =&gt; "FILE_LICENSE" &#125;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Author Metadata  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  Specify the authors of the library, with email addresses. Email addresses</span></span><br><span class="line">  <span class="comment">#  of the authors are extracted from the SCM log. E.g. $ git log. CocoaPods also</span></span><br><span class="line">  <span class="comment">#  accepts just a name if you'd rather not provide an email address.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  Specify a social_media_url where others can refer to, for example a twitter</span></span><br><span class="line">  <span class="comment">#  profile URL.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  s.author             = &#123; <span class="string">"Kyle Sun"</span> =&gt; <span class="string">"skx926@gmail.com"</span> &#125;</span><br><span class="line">  <span class="comment"># Or just: s.author    = "Kyle Sun"</span></span><br><span class="line">  <span class="comment"># s.authors            = &#123; "Kyle Sun" =&gt; "skx926<span class="doctag">@gmail</span>.com" &#125;</span></span><br><span class="line">  s.social_media_url   = <span class="string">"https://twitter.com/skx926"</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Platform Specifics ――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  If this Pod runs only on iOS or OS X, then specify the platform and</span></span><br><span class="line">  <span class="comment">#  the deployment target. You can optionally include the target after the platform.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.platform     = :ios</span></span><br><span class="line">  s.platform     = <span class="symbol">:ios</span>, <span class="string">"8.0"</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">#  When using multiple platforms</span></span><br><span class="line">  <span class="comment"># s.ios.deployment_target = "5.0"</span></span><br><span class="line">  <span class="comment"># s.osx.deployment_target = "10.7"</span></span><br><span class="line">  <span class="comment"># s.watchos.deployment_target = "2.0"</span></span><br><span class="line">  <span class="comment"># s.tvos.deployment_target = "9.0"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Source Location ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  Specify the location from where the source should be retrieved.</span></span><br><span class="line">  <span class="comment">#  Supports git, hg, bzr, svn and HTTP.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  s.source       = &#123; <span class="symbol">:git</span> =&gt; <span class="string">"https://github.com/skx926/KSGuideController.git"</span>, <span class="symbol">:tag</span> =&gt; <span class="string">"<span class="subst">#&#123;s.version&#125;</span>"</span> &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  CocoaPods is smart about how it includes source code. For source files</span></span><br><span class="line">  <span class="comment">#  giving a folder will include any swift, h, m, mm, c &amp; cpp files.</span></span><br><span class="line">  <span class="comment">#  For header files it will include any header in the folder.</span></span><br><span class="line">  <span class="comment">#  Not including the public_header_files will make all headers public.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  s.source_files  = <span class="string">"KSGuideController"</span>, <span class="string">"KSGuideController/**/*.&#123;swift&#125;"</span></span><br><span class="line">  <span class="comment"># s.exclude_files = "Classes/Exclude"</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.public_header_files = "KSGuideController/**/*.h"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  A list of resources included with the Pod. These are copied into the</span></span><br><span class="line">  <span class="comment">#  target bundle with a build phase script. Anything else will be cleaned.</span></span><br><span class="line">  <span class="comment">#  You can preserve files from being cleaned, please don't preserve</span></span><br><span class="line">  <span class="comment">#  non-essential files like tests, examples and documentation.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.resource  = "icon.png"</span></span><br><span class="line">  s.resources = <span class="string">"KSGuideController/Resources/*.png"</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.preserve_paths = "FilesToSave", "MoreFilesToSave"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Project Linking ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  Link your library with frameworks, or libraries. Libraries do not include</span></span><br><span class="line">  <span class="comment">#  the lib prefix of their name.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line"></span><br><span class="line">  s.framework  = <span class="string">"UIKit"</span></span><br><span class="line">  <span class="comment"># s.frameworks = "SomeFramework", "AnotherFramework"</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.library   = "iconv"</span></span><br><span class="line">  <span class="comment"># s.libraries = "iconv", "xml2"</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment"># ――― Project Settings ――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">#  If your library depends on compiler flags you can set them in the xcconfig hash</span></span><br><span class="line">  <span class="comment">#  where they will only apply to your library. If you depend on other Podspecs</span></span><br><span class="line">  <span class="comment">#  you can include multiple dependencies to ensure it works.</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.requires_arc = true</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># s.xcconfig = &#123; "HEADER_SEARCH_PATHS" =&gt; "$(SDKROOT)/usr/include/libxml2" &#125;</span></span><br><span class="line">  <span class="comment"># s.dependency "YYWebImage", "~&gt; 1.0.5"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>上面的文件里每个项目的意思我就不赘述了，里面的注释写的都很清楚，你需要用的配置项就把前面的 <code>#</code> 号去掉。</p>
+<p><code>trunk</code> 会根据这个文件里所描述的内容来对你的项目进行验证，所以在验证之前你需要把你的项目先 <code>push</code> 到 Github 上，同时给这次的 <code>commit</code> 添加一个 <code>tag</code>，这个 <code>tag</code> 需要和 <code>s.version</code> 相同，这样别人在集成你的库的时候才会根据版本号下载到相对应的 <code>commit</code>。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git add -A</span><br><span class="line">$ git commit -m <span class="string">"Release 0.0.1"</span></span><br><span class="line">$ git push --tags</span><br><span class="line">$ git push origin master</span><br></pre></td></tr></table></figure>
+<p>然后在项目目录下运行下面的命令来对你的 <code>podspec</code> 文件进行验证并上传到 <a href="https://github.com/CocoaPods/Specs.git" target="_blank" rel="noopener">Cocoapods/Specs</a>：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pod trunk push KSGuideController.podspec --allow-warnings</span><br></pre></td></tr></table></figure>
+<p>验证的条件比较严格，一旦有警告也无法通过，但是可以通过添加 <code>--allow-warnings</code> 参数来忽略警告。部署成功之后Cocoapods会在Twiter上@你。这时你再运行 <code>pod setup</code> 来更新本地的Pods仓库，然后使用 <code>pod search KSGuideController</code> 来搜索你刚发布的项目：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ pod search KSGuideController</span><br><span class="line">-&gt; KSGuideController (0.0.1)</span><br><span class="line">   A beautiful animated novice guide controller.</span><br><span class="line">   pod <span class="string">'KSGuideController'</span>, <span class="string">'~&gt; 0.0.1'</span></span><br><span class="line">   - Homepage: https://github.com/skx926/KSGuideController</span><br><span class="line">   - Source:   https://github.com/skx926/KSGuideController.git</span><br><span class="line">   - Versions: 0.0.1 [master repo]</span><br></pre></td></tr></table></figure>
+<p>大功告成，这样别人就可以在项目中使用Cocoapods集成你的开源库了！</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;注册&quot;&gt;注册&lt;/h3&gt;
+&lt;h5 id=&quot;安装cocoapods&quot;&gt;安装Cocoapods&lt;/h5&gt;
+&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;
+    
+    </summary>
+    
+    
+      <category term="iOS开发" scheme="http://skx926.me/tags/iOS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>让你的Mac终端“漂亮”起来</title>
+    <link href="http://skx926.me/2017/03/12/colorful-terminal/"/>
+    <id>http://skx926.me/2017/03/12/colorful-terminal/</id>
+    <published>2017-03-12T14:47:33.000Z</published>
+    <updated>2020-03-21T04:26:05.428Z</updated>
+    
+    <content type="html"><![CDATA[<p>Mac自带的终端默认的配色看起来有些单调，如何让它变的“漂亮”一些呢？这里我们以<code>Tomorrow</code>配色方案为例来进行设置。</p>
+<p>首先我们使用下面的命令来从<code>Github</code>上克隆<a href="https://github.com/chriskempson/tomorrow-theme" target="_blank" rel="noopener">Tomorrow</a>项目 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> https://github.com/chriskempson/tomorrow-theme.git</span><br></pre></td></tr></table></figure></p>
+<h2 id="窗口">窗口</h2>
+<p>进入刚才下载的项目的文件夹中的<code>OS X Terminal</code>文件夹，然后双击运行<code>Tomorrow Night.terminal</code>即可导入<code>Tomorrow Night</code>主题到终端。然后我们在终端的<code>Preferences</code>中的<code>Profiles</code>选项卡中选择<code>Tomorrow Night</code>并将它设置为默认。重启终端即可应用新的配色方案。</p>
+<h2 id="vim">Vim</h2>
+<p>打开<code>vim</code>文件夹中的<code>colors</code>文件夹并将<code>Tomorrow-Night.vim</code>文件拷贝到<code>~/.vim/colors/</code>文件夹下，然后在<code>~/.vimrc</code>文件中添加一些内容来开启vim语法高亮并设置配色方案为<code>Tomorrow Night</code>：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ vi ~/.vimrc</span><br><span class="line">syntax <span class="built_in">enable</span></span><br><span class="line">colorscheme Tomorrow-Night</span><br></pre></td></tr></table></figure>
+<h2 id="ls">ls</h2>
+<p>你可能会发现我们安装了<code>Tomorrow-Night</code>主题之后重启终端之后<code>ls</code>并没有显示高亮，这个时候我们只需要使用下面的命令启用<code>ls</code>的高亮即可 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ vi ~/.bash_profile</span><br><span class="line"><span class="built_in">export</span> CLICOLOR=1</span><br></pre></td></tr></table></figure></p>
+<h2 id="最终效果如下">最终效果如下：</h2>
+<img src="/2017/03/12/colorful-terminal/terminal1.png">
+<img src="/2017/03/12/colorful-terminal/terminal.png">
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Mac自带的终端默认的配色看起来有些单调，如何让它变的“漂亮”一些呢？这里我们以&lt;code&gt;Tomorrow&lt;/code&gt;配色方案为例来进行设置。&lt;/p&gt;
+&lt;p&gt;首先我们使用下面的命令来从&lt;code&gt;Github&lt;/code&gt;上克隆&lt;a href=&quot;https://gith
+    
+    </summary>
+    
+    
+      <category term="Mac技巧" scheme="http://skx926.me/tags/Mac%E6%8A%80%E5%B7%A7/"/>
+    
+  </entry>
+  
+</feed>

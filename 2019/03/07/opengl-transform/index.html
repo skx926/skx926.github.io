@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    
+    <title>OpenGL学习笔记（三）：向量、矩阵和变换 | CODE &amp; ZEN</title>
+    <meta name="renderer" content="webkit">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta name="description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="OpenGL学习笔记（三）：向量、矩阵和变换 | CODE &amp; ZEN">
+    <meta name="twitter:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="OpenGL学习笔记（三）：向量、矩阵和变换 | CODE &amp; ZEN">
+    <meta property="og:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    
+    <meta name="author" content="Kyle Sun">
+    
+    <link rel="stylesheet" href="/css/vno.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+
+    
+    <link rel="icon" href="/images/favicon.jpg">
+    
+
+    
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+    
+    
+    <meta name="generator" content="hexo"/>
+    
+    <link rel="alternate" type="application/rss+xml" title="CODE &amp; ZEN" href="/atom.xml">
+    
+
+    <link rel="canonical" href="http://skx926.me/2019/03/07/opengl-transform/"/>
+
+    
+    <link rel="author" href="https://plus.google.com/118328736821069549236"/>
+    
+    <!-- fancybox support -->
+    
+        <script src="/lib/jquery-3.3.1.min.js"></script>
+        <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.min.css">
+        <script src="/lib/fancybox/dist/jquery.fancybox.min.js"></script>
+        <script src="/js/wrapImage.js"></script>
+    
+</head>
+
+<body class="home-template no-js">
+
+    <span class="mobile btn-mobile-menu">
+        <i class="fa fa-list btn-mobile-menu__icon"></i>
+        <i class="fa fa-angle-up btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+<header class="panel-cover panel-cover--collapsed" style="background-image: url(/images/background-cover.jpg)">
+  <div class="panel-main">
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        <a href="/" title="前往 CODE &amp; ZEN 的主页"><img src="/images/logo.jpg" width="80" alt="CODE &amp; ZEN logo" class="panel-cover__logo logo" /></a>
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage for CODE &amp; ZEN">CODE &amp; ZEN</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">凯旋的博客</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">我是孙凯旋 @skx926<br>一名来自中国的 iOS 开发者<br>写过 Android<br>也会点 Web<br>深知付出更多才能收获更多<br>唯有在技术的道路上勤勤恳恳<br>方得片刻安心</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        <div class="navigation-wrapper">
+          <div>
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+              <li class="navigation__item"><a href="/#blog" title="访问博客" class="blog-button">文章</a></li>
+            
+              <li class="navigation__item"><a href="/archives">归档</a></li>
+            
+            </ul>
+          </nav>
+          </div>
+          <div>
+          <nav class="cover-navigation navigation--social">
+  <ul class="navigation">
+
+  <!-- Weibo-->
+  
+  <li class="navigation__item">
+    <a href="http://weibo.com/ikeson" title="我的微博" target="_blank">
+      <i class='social fa fa-weibo'></i>
+      <span class="label">Weibo</span>
+    </a>
+  </li>
+
+
+  <!-- Github -->
+  
+  <li class="navigation__item">
+    <a href="https://github.com/skx926" title="查看我的GitHub主页" target="_blank">
+      <i class='social fa fa-github'></i>
+      <span class="label">Github</span>
+    </a>
+  </li>
+
+
+<!-- Stack Overflow -->
+        
+
+  <!-- Google Plus -->
+  
+  <li class="navigation__item">
+    <a href="https://plus.google.com/118328736821069549236" title="Google+" target="_blank">
+      <i class='social fa fa-google-plus-square'></i>
+      <span class="label">Google+</span>
+    </a>
+  </li>
+
+
+<!-- Facebook -->
+
+
+<!-- Twitter -->
+
+  <li class="navigation__item">
+    <a href="https://twitter.com/skx926" title="上Twitter找我" target="_blank">
+      <i class='social fa fa-twitter'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+<!-- instagram -->
+
+  <li class="navigation__item">
+    <a href="https://www.instagram.com/skx926" title="上Instagram找我" target="_blank">
+      <i class='social fa fa-instagram'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+
+  <li class="navigation__item">
+    <a href="/atom.xml" title="RSS" target="_blank">
+      <i class='social fa fa-rss'></i>
+      <span class="label">RSS</span>
+    </a>
+  </li>
+
+
+
+  </ul>
+</nav>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay cover-disabled"></div>
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <article class="post-container post-container--single">
+
+  <header class="post-header">
+    <div class="post-meta">
+      <time datetime="2019-03-07T03:38:21.000Z" class="post-list__meta--date date">2019/03/07</time>
+ &#8226; <span class="post-meta__tags tags">分类&nbsp;
+  <a class="tag-link" href="/tags/Graphic/">Graphic</a>
+
+</span>
+    </div>
+    <h1 class="post-title">OpenGL学习笔记（三）：向量、矩阵和变换</h1>
+  </header>
+
+  <section class="post">
+    <p><a href="http://ky1e.me/2018/09/05/28.mac-glfw/" target="_blank" rel="noopener">OpenGL学习笔记（一）：在Mac上编译GLFW并配置到Xcode项目</a></p>
+<h2 id="向量">向量</h2>
+<p>向量最基本的定义就是一个方向。或者更正式的说，向量有一个方向(Direction)和大小(Magnitude，也叫做强度或长度)。如果一个向量有2个维度，它表示一个平面的方向，当它有3个维度的时候它可以表达一个3D世界的方向。</p>
+<p>下面你会看到3个向量，每个向量在2D图像中都用一个箭头<span class="math inline">\((x, y)\)</span>表示。我们在2D图片中展示这些向量，因为这样子会更直观一点。你可以把这些2D向量当做z坐标为0的3D向量。由于向量表示的是方向，起始于何处并不会改变它的值。下图我们可以看到向量<span class="math inline">\(\bar{v}\)</span>和<span class="math inline">\(\bar{w}\)</span>是相等的，尽管他们的起始点不同：</p>
+<img src="/2019/03/07/opengl-transform/vectors.png">
+<p>用公式表示就是这样：<span class="math inline">\(\bar{v} = \begin{pmatrix} \color{red}x \\ \color{green}y \\ \color{blue}z \end{pmatrix}\)</span></p>
+<p>由于向量是一个方向，所以有些时候会很难形象地将它们用位置(Position)表示出来。为了让其更为直观，我们通常设定这个方向的原点为<span class="math inline">\((0, 0, 0)​\)</span>，然后指向一个方向，对应一个点，使其变为位置向量(Position Vector)（你也可以把起点设置为其他的点，然后说：这个向量从这个点起始指向另一个点）。比如说位置向量<span class="math inline">\((3, 5)​\)</span>在图像中的起点会是<span class="math inline">\((0, 0)​\)</span>，并会指向<span class="math inline">\((3, 5)​\)</span>。我们可以使用向量在2D或3D空间中表示方向与位置.</p>
+<h3 id="向量与标量的运算">向量与标量的运算</h3>
+<p>标量(Scalar)只是一个数字（或者说是仅有一个分量的向量）。当把一个向量加/减/乘/除一个标量，我们可以简单的把向量的每个分量分别进行该运算。对于加法来说会像这样:</p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}1 \\ \color{green}2 \\ \color{blue}3 \end{pmatrix} + x = \begin{pmatrix} \color{red}1 + x \\ \color{green}2 + x \\ \color{blue}3 + x \end{pmatrix}​\]</span></p>
+<h3 id="向量加减">向量加减</h3>
+<p>向量的加法可以被定义为是分量的(Component-wise)相加，即将一个向量中的每一个分量加上另一个向量的对应分量:</p>
+<p><span class="math display">\[\bar{v} = \begin{pmatrix} \color{red}1 \\ \color{green}2 \\ \color{blue}3 \end{pmatrix}, \bar{k} = \begin{pmatrix} \color{red}4 \\ \color{green}5 \\ \color{blue}6 \end{pmatrix} \rightarrow \bar{v} + \bar{k} = \begin{pmatrix} \color{red}1 + \color{red}4 \\ \color{green}2 + \color{green}5 \\ \color{blue}3 + \color{blue}6 \end{pmatrix} = \begin{pmatrix} \color{red}5 \\ \color{green}7 \\ \color{blue}9 \end{pmatrix}​\]</span></p>
+<img src="/2019/03/07/opengl-transform/vectors_addition.png">
+<h3 id="向量长度">向量长度</h3>
+<p>我们使用勾股定理(Pythagoras Theorem)来获取向量的长度(Length)/大小(Magnitude)。如果你把向量的x与y分量画出来，该向量会和x与y分量为边形成一个三角形:</p>
+<img src="/2019/03/07/opengl-transform/vectors_triangle.png">
+<p>因为两条边（x和y）是已知的，如果希望知道斜边<span class="math inline">\(\color{red}{\bar{v}}​\)</span>的长度，我们可以直接通过勾股定理来计算：</p>
+<p><span class="math display">\[||\color{red}{\bar{v}}|| = \sqrt{\color{green}x^2 + \color{blue}y^2}​\]</span></p>
+<p>有一个特殊类型的向量叫做单位向量(Unit Vector)。单位向量有一个特别的性质——它的长度是1。我们可以用任意向量的每个分量除以向量的长度得到它的单位向量<span class="math inline">\(\hat{n}\)</span></p>
+<p><span class="math display">\[\hat{n} = \frac{\bar{v}}{||\bar{v}||}​\]</span></p>
+<p>我们把这种方法叫做一个向量的标准化(Normalizing)。单位向量头上有一个^样子的记号。通常单位向量会变得很有用，特别是在我们只关心方向不关心长度的时候。</p>
+<h3 id="向量相乘">向量相乘</h3>
+<p>两个向量相乘是一种很奇怪的情况。普通的乘法在向量上是没有定义的，因为它在视觉上是没有意义的。但是在相乘的时候我们有两种特定情况可以选择：一个是点乘(Dot Product)，记作<span class="math inline">\(\bar{v} \cdot \bar{k}\)</span>，另一个是叉乘(Cross Product)，记作<span class="math inline">\(\bar{v} \times \bar{k}\)</span>。</p>
+<h4 id="点乘">点乘</h4>
+<p>两个向量的点乘等于它们的数乘结果乘以两个向量之间夹角的余弦值。可能听起来有点费解，我们来看一下公式：</p>
+<p><span class="math display">\[\bar{v} \cdot \bar{k} = ||\bar{v}|| \cdot ||\bar{k}|| \cdot \cos \theta\]</span></p>
+<p>它们之间的夹角记作<span class="math inline">\(\theta​\)</span>。为什么这很有用？想象如果<span class="math inline">\(\bar{v}​\)</span>和<span class="math inline">\(\bar{k}​\)</span>都是单位向量，它们的长度会等于1。这样公式会有效简化成：</p>
+<p><span class="math display">\[\bar{v} \cdot \bar{k} =1⋅1⋅cosθ=cosθ\]</span></p>
+<p>现在点积只定义了两个向量的夹角。你也许记得90度的余弦值是0，0度的余弦值是1。使用点乘可以很容易测试两个向量是否正交(Orthogonal)或平行（正交意味着两个向量互为直角）。</p>
+<p>也可以通过点乘的结果计算两个非单位向量的夹角，点乘的结果除以两个向量的长度之积，得到的结果就是夹角的余弦值，即<span class="math inline">\(cos\theta​\)</span>。</p>
+<p><span class="math display">\[\cos \theta = \frac{\bar{v} \cdot \bar{k}}{||\bar{v}|| \cdot ||\bar{k}||}​\]</span></p>
+<p>点乘是通过将对应分量逐个相乘，然后再把所得积相加来计算的。</p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}{0.6} \\ -\color{green}{0.8} \\ \color{blue}0 \end{pmatrix} \cdot \begin{pmatrix} \color{red}0 \\ \color{green}1 \\ \color{blue}0 \end{pmatrix} = (\color{red}{0.6} * \color{red}0) + (-\color{green}{0.8} * \color{green}1) + (\color{blue}0 * \color{blue}0) = -0.8\]</span></p>
+<h4 id="叉乘">叉乘</h4>
+<p>叉乘只在3D空间中有定义，它需要两个不平行向量作为输入，生成一个正交于两个输入向量的第三个向量。如果输入的两个向量也是正交的，那么叉乘之后将会产生3个互相正交的向量。</p>
+<img src="/2019/03/07/opengl-transform/vectors_crossproduct.png">
+<p>两个正交向量A和B叉积：</p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}{A_{x}} \\ \color{green}{A_{y}} \\ \color{blue}{A_{z}} \end{pmatrix} \times \begin{pmatrix} \color{red}{B_{x}} \\ \color{green}{B_{y}} \\ \color{blue}{B_{z}}  \end{pmatrix} = \begin{pmatrix} \color{green}{A_{y}} \cdot \color{blue}{B_{z}} - \color{blue}{A_{z}} \cdot \color{green}{B_{y}} \\ \color{blue}{A_{z}} \cdot \color{red}{B_{x}} - \color{red}{A_{x}} \cdot \color{blue}{B_{z}} \\ \color{red}{A_{x}} \cdot \color{green}{B_{y}} - \color{green}{A_{y}} \cdot \color{red}{B_{x}} \end{pmatrix}\]</span></p>
+<h2 id="矩阵">矩阵</h2>
+<p>简单来说矩阵就是一个矩形的数字、符号或表达式数组。矩阵中每一项叫做矩阵的元素(Element)。下面是一个2×3矩阵的例子：</p>
+<p><span class="math display">\[\begin{bmatrix} 1 &amp; 2 &amp; 3 \\ 4 &amp; 5 &amp; 6 \end{bmatrix}​\]</span></p>
+<p>矩阵可以通过<span class="math inline">\((i, j)\)</span>进行索引，i是行，j是列，这就是上面的矩阵叫做2×3矩阵的原因。</p>
+<h3 id="矩阵的加减">矩阵的加减</h3>
+<p>矩阵与标量之间的加减定义如下：</p>
+<p><span class="math display">\[\begin{bmatrix} 1 &amp; 2 \\ 3 &amp; 4 \end{bmatrix} + \color{green}3 = \begin{bmatrix} 1 + \color{green}3 &amp; 2 + \color{green}3 \\ 3 + \color{green}3 &amp; 4 + \color{green}3 \end{bmatrix} = \begin{bmatrix} 4 &amp; 5 \\ 6 &amp; 7 \end{bmatrix}​\]</span></p>
+<p>矩阵与矩阵之间的加减就是两个矩阵对应元素的加减运算，所以总体的规则和与标量运算是差不多的，只不过在相同索引下的元素才能进行运算。</p>
+<p><span class="math display">\[\begin{bmatrix} \color{red}4 &amp; \color{red}2 \\ \color{green}1 &amp; \color{green}6 \end{bmatrix} - \begin{bmatrix} \color{red}2 &amp; \color{red}4 \\ \color{green}0 &amp; \color{green}1 \end{bmatrix} = \begin{bmatrix} \color{red}4 - \color{red}2 &amp; \color{red}2  - \color{red}4 \\ \color{green}1 - \color{green}0 &amp; \color{green}6 - \color{green}1 \end{bmatrix} = \begin{bmatrix} \color{red}2 &amp; -\color{red}2 \\ \color{green}1 &amp; \color{green}5 \end{bmatrix}​\]</span></p>
+<h3 id="矩阵的数乘">矩阵的数乘</h3>
+<p>和矩阵与标量的加减一样，矩阵与标量之间的乘法也是矩阵的每一个元素分别乘以该标量。</p>
+<p><span class="math display">\[\color{green}2 \cdot \begin{bmatrix} 1 &amp; 2 \\ 3 &amp; 4 \end{bmatrix} = \begin{bmatrix} \color{green}2 \cdot 1 &amp; \color{green}2 \cdot 2 \\ \color{green}2 \cdot 3 &amp; \color{green}2 \cdot 4 \end{bmatrix} = \begin{bmatrix} 2 &amp; 4 \\ 6 &amp; 8 \end{bmatrix}​\]</span></p>
+<h3 id="矩阵相乘">矩阵相乘</h3>
+<p>矩阵相乘有一些限制：</p>
+<ol type="1">
+<li><p>只有当左侧矩阵的列数与右侧矩阵的行数相等，两个矩阵才能相乘。</p></li>
+<li><p>矩阵相乘不遵守交换律(Commutative)，也就是说<span class="math inline">\(A \cdot B \neq B \cdot A​\)</span>。</p></li>
+</ol>
+<p><span class="math display">\[\begin{bmatrix} \color{red}1 &amp; \color{red}2 \\ \color{green}3 &amp; \color{green}4 \end{bmatrix} \cdot \begin{bmatrix} \color{blue}5 &amp; \color{purple}6 \\ \color{blue}7 &amp; \color{purple}8 \end{bmatrix} = \begin{bmatrix} \color{red}1 \cdot \color{blue}5 + \color{red}2 \cdot \color{blue}7 &amp; \color{red}1 \cdot \color{purple}6 + \color{red}2 \cdot \color{purple}8 \\ \color{green}3 \cdot \color{blue}5 + \color{green}4 \cdot \color{blue}7 &amp; \color{green}3 \cdot \color{purple}6 + \color{green}4 \cdot \color{purple}8 \end{bmatrix} = \begin{bmatrix} 19 &amp; 22 \\ 43 &amp; 50 \end{bmatrix}\]</span></p>
+<p>矩阵的乘法是一系列乘法和加法组合的结果，它使用到了左侧矩阵的行和右侧矩阵的列。</p>
+<img src="/2019/03/07/opengl-transform/matrix_multiplication.png">
+<p>结果矩阵的维度是(n, m)，n等于左侧矩阵的行数，m等于右侧矩阵的列数。</p>
+<p><span class="math display">\[\begin{bmatrix} \color{red}4 &amp; \color{red}2 &amp; \color{red}0 \\ \color{green}0 &amp; \color{green}8 &amp; \color{green}1 \\ \color{blue}0 &amp; \color{blue}1 &amp; \color{blue}0 \end{bmatrix} \cdot \begin{bmatrix} \color{red}4 &amp; \color{green}2 &amp; \color{blue}1 \\ \color{red}2 &amp; \color{green}0 &amp; \color{blue}4 \\ \color{red}9 &amp; \color{green}4 &amp; \color{blue}2 \end{bmatrix} = \begin{bmatrix} \color{red}4 \cdot \color{red}4 + \color{red}2 \cdot \color{red}2 + \color{red}0 \cdot \color{red}9 &amp; \color{red}4 \cdot \color{green}2 + \color{red}2 \cdot \color{green}0 + \color{red}0 \cdot \color{green}4 &amp; \color{red}4 \cdot \color{blue}1 + \color{red}2 \cdot \color{blue}4 + \color{red}0 \cdot \color{blue}2 \\ \color{green}0 \cdot \color{red}4 + \color{green}8 \cdot \color{red}2 + \color{green}1 \cdot \color{red}9 &amp; \color{green}0 \cdot \color{green}2 + \color{green}8 \cdot \color{green}0 + \color{green}1 \cdot \color{green}4 &amp; \color{green}0 \cdot \color{blue}1 + \color{green}8 \cdot \color{blue}4 + \color{green}1 \cdot \color{blue}2 \\ \color{blue}0 \cdot \color{red}4 + \color{blue}1 \cdot \color{red}2 + \color{blue}0 \cdot \color{red}9 &amp; \color{blue}0 \cdot \color{green}2 + \color{blue}1 \cdot \color{green}0 + \color{blue}0 \cdot \color{green}4 &amp; \color{blue}0 \cdot \color{blue}1 + \color{blue}1 \cdot \color{blue}4 + \color{blue}0 \cdot \color{blue}2 \end{bmatrix}   \\ = \begin{bmatrix} 20 &amp; 8 &amp; 12 \\ 25 &amp; 4 &amp; 34 \\ 2 &amp; 0 &amp; 4 \end{bmatrix}\]</span></p>
+<h2 id="向量与矩阵相乘">向量与矩阵相乘</h2>
+<p>前面我们把向量表示成这种形式<span class="math inline">\(\begin{pmatrix} \color{red}x \\ \color{green}y \\ \color{blue}z \end{pmatrix}\)</span>，这种情况下它其实就是一个<strong>N×1</strong>矩阵，N表示向量分量的个数。我们也可以把它表示成一个<strong>1×N</strong>的矩阵，也就是这样​<span class="math inline">\(\begin{pmatrix} \color{red}x &amp; \color{green}y &amp; \color{blue}z \end{pmatrix}\)</span></p>
+<p>如果我们有一个<strong>N×N</strong>矩阵，我们可以用我们的<strong>1×N</strong>向量乘以这个矩阵，因为这个矩阵的行数等于向量的列数，所以最终得到的结果也是一个<strong>1×N</strong>的矩阵，这就相当于是给向量做了一个变换。</p>
+<h3 id="单位矩阵">单位矩阵</h3>
+<p>单位矩阵是一个除了对角线以外都是0的<strong>N×N</strong>矩阵。在下式中可以看到，这种变换矩使一个向量完全不变：</p>
+<p><span class="math display">\[\begin{pmatrix} a &amp; b &amp; c &amp; d \end{pmatrix} \cdot \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix}  = \begin{bmatrix} \color{red}1 \cdot a &amp; \color{green}1 \cdot b &amp; \color{blue}1 \cdot c &amp; \color{purple}1 \cdot d \end{bmatrix} = \begin{pmatrix} a &amp; b &amp; c &amp; d \end{pmatrix}\]</span></p>
+<h3 id="缩放">缩放</h3>
+<p>对一个向量进行缩放(Scaling)就是对向量的长度进行缩放，而保持它的方向不变。由于我们进行的是2维或3维操作，我们可以分别定义一个有2或3个缩放变量的向量，每个变量缩放一个轴(x、y或z)。</p>
+<p>我们先来尝试缩放向量<span class="math inline">\(\color{red}{\bar{v}} = (3,2)\)</span>。我们可以把向量沿着x轴缩放0.5，使它的宽度缩小为原来的二分之一；我们将沿着y轴把向量的高度缩放为原来的两倍。我们看看把向量缩放(0.5, 2)倍所获得的<span class="math inline">\(\color{blue}{\bar{s}}\)</span>是什么样的：</p>
+<img src="/2019/03/07/opengl-transform/vectors_scale.png">
+<p>OpenGL通常是在3D空间进行操作的，对于2D的情况我们可以把z轴缩放1倍，这样z轴的值就不变了。我们刚刚的缩放操作是不均匀(Non-uniform)缩放，因为每个轴的缩放因子(Scaling Factor)都不一样。如果每个轴的缩放因子都一样那么就叫均匀缩放(Uniform Scale)。</p>
+<p>我们下面会构造一个变换矩阵来为我们提供缩放功能。我们从单位矩阵了解到，每个对角线元素会分别与向量的对应元素相乘。如果我们把1变为3会怎样？这样子的话，我们就把向量的每个元素乘以3了，这事实上就把向量缩放3倍。如果我们把缩放变量表示为<span class="math inline">\((\color{red}{S_1}, \color{green}{S_2}, \color{blue}{S_3})\)</span>可以为任意向量<span class="math inline">\((x,y,z)\)</span>定义一个缩放矩阵：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z  \end{pmatrix} \cdot \begin{bmatrix} \color{red}{S_1} &amp; \color{green}0 &amp; \color{blue}0  \\ \color{red}0 &amp; \color{green}{S_2} &amp; \color{blue}0  \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}{S_3}   \end{bmatrix}  = \begin{pmatrix} \color{red}{S_1} \cdot x &amp; \color{green}{S_2} \cdot y &amp; \color{blue}{S_3} \cdot z  \end{pmatrix}​\]</span></p>
+<h3 id="位移">位移</h3>
+<p>位移(Translation)是在原始向量的基础上加上另一个向量从而获得一个在不同位置的新向量的过程，从而在位移向量基础上移动了原始向量。</p>
+<p>和缩放矩阵一样，在4×4矩阵上有几个特别的位置用来执行特定的操作，对于位移来说它们是第四列最上面的3个值。如果我们把位移向量表示为<span class="math inline">\((\color{red}{T_x},\color{green}{T_y},\color{blue}{T_z})​\)</span>，我们就能把位移矩阵定义为：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; w \end{pmatrix} \cdot \begin{bmatrix}  \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}{0} \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}{0} \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}{0} \\ \color{red}{T_x} &amp; \color{green}{T_y} &amp; \color{blue}{T_z} &amp; \color{purple}1 \end{bmatrix}  = \begin{pmatrix} x + \color{red}{T_x} &amp; y + \color{green}{T_y} &amp; z + \color{blue}{T_z} &amp; w \end{pmatrix}\]</span></p>
+<p>这样是能工作的，因为所有的位移值都要乘以向量的<strong>w</strong>行，所以位移值会加到向量的原始值上（想想矩阵乘法法则）。而如果你用3x3矩阵我们的位移值就没地方放也没地方乘了，所以是不行的。</p>
+<blockquote>
+<p><strong>齐次坐标(Homogeneous Coordinates)</strong></p>
+<p>向量的w分量也叫齐次坐标。想要从齐次向量得到3D向量，我们可以把x、y和z坐标分别除以w坐标。我们通常不会注意这个问题，因为w分量通常是1.0。使用齐次坐标有几点好处：它允许我们在3D向量上进行位移（如果没有w分量我们是不能位移向量的）。</p>
+</blockquote>
+<h3 id="旋转">旋转</h3>
+<p>首先我们来定义一个向量的旋转到底是什么。下图中展示的2D向量<span class="math inline">\(\bar{v}​\)</span>是由<span class="math inline">\(\bar{k}​\)</span>向右旋转72度所得的：</p>
+<img src="/2019/03/07/opengl-transform/vectors_angle.png">
+<p>在3D空间中旋转需要定义一个角和一个旋转轴(Rotation Axis)。物体会沿着给定的旋转轴旋转特定角度。如果你想要更形象化的感受，可以试试向下看着一个特定的旋转轴，同时将你的头部旋转一定角度。当2D向量在3D空间中旋转时，我们把旋转轴设为z轴（尝试想象这种情况）。</p>
+<p>沿x轴旋转：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot  \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}{\cos \theta} &amp; \color{blue}{\sin \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; -\color{green}{\sin \theta} &amp; \color{blue}{\cos \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{pmatrix} x &amp; \color{green}{\cos \theta} \cdot y - \color{green}{\sin \theta} \cdot z &amp; \color{blue}{\sin \theta} \cdot y + \color{blue}{\cos \theta} \cdot z &amp; 1 \end{pmatrix}​\]</span></p>
+<p>沿y轴旋转：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp;z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} \color{red}{\cos \theta} &amp; \color{green}0 &amp; -\color{blue}{\sin \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\  \color{red}{\sin \theta} &amp; \color{green}0 &amp; \color{blue}{\cos \theta} &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{pmatrix} \color{red}{\cos \theta} \cdot x + \color{red}{\sin \theta} \cdot z &amp; y &amp;- \color{blue}{\sin \theta} \cdot x + \color{blue}{\cos \theta} \cdot z &amp; 1 \end{pmatrix}​\]</span></p>
+<p>沿z轴旋转：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} \color{red}{\cos \theta} &amp;  \color{green}{\sin \theta} &amp; \color{blue}0 &amp; \color{purple}0 \\ - \color{red}{\sin \theta} &amp; \color{green}{\cos \theta} &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{pmatrix} \color{red}{\cos \theta} \cdot x - \color{red}{\sin \theta} \cdot y  &amp; \color{green}{\sin \theta} \cdot x + \color{green}{\cos \theta} \cdot y &amp; z &amp; 1 \end{pmatrix}​\]</span></p>
+<p>对于3D空间中的旋转，一个更好的模型是沿着任意的一个轴，比如单位向量<span class="math inline">\((0.662, 0.2, 0.7222)​\)</span>旋转，而不是对一系列旋转矩阵进行复合。这样的一个（超级麻烦的）矩阵是存在的，见下面这个公式，其中<span class="math inline">\((\color{red}{R_x}, \color{green}{R_y}, \color{blue}{R_z})​\)</span>代表任意旋转轴：</p>
+<p><span class="math display">\[\begin{bmatrix} \cos \theta + \color{red}{R_x}^2(1 - \cos \theta) &amp; \color{green}{R_y}\color{red}{R_x} (1 - \cos \theta) + \color{blue}{R_z} \sin \theta  &amp; \color{blue}{R_z}\color{red}{R_x}(1 - \cos \theta) - \color{green}{R_y} \sin \theta &amp; 0 \\ \color{red}{R_x}\color{green}{R_y}(1 - \cos \theta) - \color{blue}{R_z} \sin \theta &amp; \cos \theta + \color{green}{R_y}^2(1 - \cos \theta) &amp; \color{blue}{R_z}\color{green}{R_y}(1 - \cos \theta) + \color{red}{R_x} \sin \theta  &amp; 0 \\ \color{red}{R_x}\color{blue}{R_z}(1 - \cos \theta) + \color{green}{R_y} \sin \theta &amp; \color{green}{R_y}\color{blue}{R_z}(1 - \cos \theta) - \color{red}{R_x} \sin \theta&amp; \cos \theta + \color{blue}{R_z}^2(1 - \cos \theta) &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 1 \end{bmatrix}​\]</span></p>
+<h3 id="矩阵的组合">矩阵的组合</h3>
+<p>使用矩阵进行变换的真正力量在于，根据矩阵之间的乘法，我们可以把多个变换组合到一个矩阵中。让我们看看我们是否能生成一个变换矩阵，让它组合多个变换。假设我们有一个顶点(x, y, z)，我们希望将其缩放2倍，然后位移<span class="math inline">\((1, 2, 3)\)</span>个单位。我们需要一个位移和缩放矩阵来完成这些变换。结果的变换矩阵看起来像这样：</p>
+<p><span class="math display">\[Trans = \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} \cdot \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix} = \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix}​\]</span></p>
+<p><span class="math display">\[Trans&#39; = \begin{bmatrix} \color{red}1 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}1 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}1 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix} \cdot \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}1 \end{bmatrix} = \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}2 &amp; \color{green}4 &amp; \color{blue}6 &amp; \color{purple}1 \end{bmatrix}​\]</span></p>
+<p>注意，当矩阵相乘时我们先写位移再写缩放变换的。矩阵乘法是不遵守交换律的，这意味着它们的顺序很重要。建议您在组合矩阵时，先进行缩放操作，然后是旋转，最后才是位移，否则它们会互相影响。比如，如果你先位移再缩放，位移的向量也会同样被缩放。</p>
+<p>用最终的变换矩阵乘以我们的向量会得到以下结果：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} \color{red}2 &amp; \color{green}0 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}2 &amp; \color{blue}0 &amp; \color{purple}0 \\ \color{red}0 &amp; \color{green}0 &amp; \color{blue}2 &amp; \color{purple}0 \\ \color{red}1 &amp; \color{green}2 &amp; \color{blue}3 &amp; \color{purple}1 \end{bmatrix}  = \begin{pmatrix} \color{red}2x + \color{red}1 &amp; \color{green}2y + \color{green}2  &amp; \color{blue}2z + \color{blue}3 &amp; 1 \end{pmatrix}\]</span></p>
+<h2 id="catransform3d">CATransform3D</h2>
+<p>我们可以在<code>&lt;QuartzCore/CATransform3D.h&gt;</code>中看到CATransform3D的定义：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">struct</span> CATransform3D</span><br><span class="line">&#123;</span><br><span class="line">  CGFloat m11, m12, m13, m14;</span><br><span class="line">  CGFloat m21, m22, m23, m24;</span><br><span class="line">  CGFloat m31, m32, m33, m34;</span><br><span class="line">  CGFloat m41, m42, m43, m44;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这个结构体对应的是这样一个4x4的变换矩阵：</p>
+<p><span class="math display">\[\begin{bmatrix} m_{11} &amp; m_{12} &amp; m_{13}&amp; m_{14} \\ m_{21}&amp; m_{22} &amp; m_{23} &amp; m_{24} \\ m_{31} &amp; m_{32} &amp; m_{33} &amp; m_{34} \\ m_{41} &amp; m_{42} &amp; m_{43} &amp; m_{44} \end{bmatrix}​\]</span></p>
+<p>坐标向量和变换矩阵的乘法为：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  \color{red}{m_{11}} &amp;\color{green}{m_{12}} &amp; \color{blue}{m_{13}} &amp; \color{purple}{m_{14}} \\  \color{red}{m_{21}}&amp; \color{green}{m_{22}} &amp; \color{blue}{m_{23}} &amp; \color{purple}{m_{24}} \\  \color{red}{m_{31}} &amp; \color{green}{m_{32}} &amp; \color{blue}{m_{33}} &amp; \color{purple}{m_{34}} \\  \color{red}{m_{41}} &amp;\color{green}{m_{42}} &amp; \color{blue}{m_{43}} &amp; \color{purple}{m_{44}} \end{bmatrix} =​\]</span></p>
+<p><span class="math display">\[\begin{pmatrix} \color{red}{m_{11}}x + \color{red}{m_{21}}y +\color{red}{m_{31}}z + \color{red}{m_{41}} &amp; \color{green}{m_{12}}x + \color{green}{m_{22}}y + \color{green}{m_{32}}z + \color{green}{m_{42}} &amp; \color{blue}{m_{13}}x +  \color{blue}{m_{23}}y + \color{blue}{m_{33}}z + \color{blue}{m_{43}} &amp; \color{purple}{m_{14}}x + \color{purple}{m_{24}}y + \color{purple}{m_{34}}z + \color{purple}{m_{44}} \end{pmatrix}\]</span></p>
+<h3 id="cgaffinetransform">CGAffineTransform</h3>
+<p>CGAffineTransform是用在2D中的变换矩阵，我们可以在<code>&lt;CoreGraphic/CGAffineTransform.h&gt;</code>中看到CGAffineTransform的定义：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="keyword">struct</span> CGAffineTransform &#123;</span><br><span class="line">  CGFloat a, b, c, d;</span><br><span class="line">  CGFloat tx, ty;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这个结构体对应的是这样一个3x3的变换矩阵：</p>
+<p><span class="math display">\[\begin{bmatrix} a &amp; b &amp; 0  \\ c &amp; d &amp; 0 \\ tx &amp; ty &amp; 1  \end{bmatrix}​\]</span></p>
+<p>坐标向量和变换矩阵的乘法为：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  a &amp; b &amp; 0 \\ c &amp; d &amp; 0 \\ tx &amp; ty &amp; 1 \end{bmatrix} = \begin{bmatrix}  x\cdot a + y \cdot c + tx &amp;  x \cdot b + y \cdot d + ty &amp; 1 \end{bmatrix}​\]</span></p>
+<p>缩放:</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1  \end{pmatrix} \cdot \begin{bmatrix}  sx &amp; 0 &amp; 0 \\ 0 &amp; sy &amp; 0 \\ 0 &amp; 0  &amp;1 \end{bmatrix} = \begin{bmatrix}  sx \cdot x  &amp;  sy \cdot y &amp; 1 \end{bmatrix}​\]</span></p>
+<h5 id="section"></h5>
+<p>位移:</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  1 &amp; 0 &amp; 0 \\ 0 &amp; 1 &amp; 0 \\ tx &amp; ty &amp; 1 \end{bmatrix} = \begin{bmatrix}  x + tx  &amp;  y + ty &amp; 1 \end{bmatrix}​\]</span></p>
+<p>旋转:</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; 1 \end{pmatrix} \cdot \begin{bmatrix}  cos\theta &amp; sin\theta &amp; 0 \\ -sin\theta &amp; cos\theta &amp; 0 \\ 0 &amp; 0 &amp; 1 \end{bmatrix} = \begin{bmatrix}  cos\theta \cdot x - sin\theta \cdot y  &amp;  sin\theta \cdot x + cos\theta\cdot y&amp; 1 \end{bmatrix}\]</span></p>
+<h3 id="透视投影">透视投影</h3>
+<p>实际中你如果直接使用旋转，会注意到旋转前后，结果看起来竟然和普通的缩放一模一样，这是为什么呢？原因其实很简单，假如绕y轴旋转，空间中的图层虽然旋转了，但是显示到XoY平面（也就是iPhone的屏幕上）的时候，会把3D的物体进行正投影，这样子看上去就像是左右压缩一样</p>
+<p>而学过绘画的都知道人的视野并不是平行的，而是有一个透视图的概念，眼睛前有实际平行的两条线段发出（相当于z轴方向的向量），人眼看起来会相交于一点上（焦点，Focal point），这才产生了3D感。</p>
+<img src="/2019/03/07/opengl-transform/projection.png">
+<p>如何用变换矩阵实现透视投影呢？只需要修改一个值<span class="math inline">\(m_{34}\)</span>。为什么单单修改一个<span class="math inline">\(m_{34}\)</span>的值，就能达到这种透视3D的效果呢？</p>
+<p>Core Animation已经定义了焦点的x,y坐标，就是这个图层的anchorPoint（锚点），同时取z=0的XoY平面作为图像平面（也就是iPhone的屏幕平面），那么假如我希望焦点到图像平面的距离是d，可以假设焦点坐标为(0,0,d)，现在对m34的值进行赋值为w，初始向量坐标为<span class="math inline">\((x,y,z)\)</span>，开始推导：</p>
+<p>矩阵乘法：</p>
+<p><span class="math display">\[\begin{pmatrix} x &amp; y &amp; z &amp; 1 \end{pmatrix} \cdot \begin{bmatrix} 1 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 1 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 1 &amp; w \\ 0 &amp; 0 &amp; 0 &amp; 1 \end{bmatrix}  = \begin{pmatrix} x &amp; y &amp; z &amp; zw+1 \end{pmatrix}​\]</span></p>
+<p>此时得到的向量不为齐次，需要进行齐次化，得到真正的坐标：</p>
+<p><span class="math display">\[\begin{pmatrix} x&#39; &amp; y&#39; &amp; z&#39; &amp; 1 \end{pmatrix} = \begin{pmatrix} \frac{x}{zw+1} &amp; \frac{y}{zw+1} &amp; \frac{z}{zw+1} &amp; 1 \end{pmatrix}​\]</span></p>
+<p>最后对XoY平面进行投影，则最终看到的二维向量应该为:</p>
+<p><span class="math display">\[\begin{pmatrix} \frac{x}{zw+1} &amp; \frac{y}{zw+1} \end{pmatrix}\]</span></p>
+<p>现在考虑x轴的情况（y轴同理），我们知道真实三维空间的x坐标是x，现在得到透视投影下的x坐标是<span class="math inline">\(\frac{x}{zw+1}​\)</span></p>
+<p>为了得到d和w的关系，这里引用一幅图，绿色的点为原始点，红色的点为投影到XoY平面上的点，我们这里推导不需要管具体的值，只是为了更清晰地发现规律：</p>
+<img src="/2019/03/07/opengl-transform/projection_axis.jpg">
+<p>根据相似三角形原理我们可以得到</p>
+<p><span class="math display">\[|\frac{x}{zw+1} : x| = d : (|z| + d)​\]</span></p>
+<p>去绝对值号，且x!=0,z!=0，由图可得此处的z为负数，所以：</p>
+<p><span class="math display">\[\frac{1}{zw+1}  = \frac{d} {d - z}​\]</span></p>
+<p><span class="math display">\[zw+1 = 1 - \frac{z}d\]</span></p>
+<p><span class="math display">\[w = - \frac{1}d\]</span></p>
+<p>因此<span class="math inline">\(m_{34}​\)</span>的值就为<span class="math inline">\(- \frac{1}d​\)</span>，这里的<span class="math inline">\(d​\)</span>就是焦点距离，也就是人眼到手机屏幕的距离，一般取值在500~1000之间。默认初始变换矩阵的<span class="math inline">\(m_{34}​\)</span>是0，也就是说认为焦点无限远，因此看起来没有任何3D感。假如我们取d越大，则看起来越没有投射和3D感；取d越小，则3D感和失真感越强烈。</p>
+<p>参考文章：</p>
+<p><a href="https://learnopengl-cn.github.io/01%20Getting%20started/07%20Transformations/" target="_blank" rel="noopener">LearnOpenGL CN:变换</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/23359747" target="_blank" rel="noopener">Core Animation 3D 仿射变换知识</a></p>
+
+  </section>
+
+</article>
+
+<section class="read-more">
+     
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">最近的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2019/03/13/sdk-development/" title="SDK开发和打包静态库遇到的坑">SDK开发和打包静态库遇到的坑</a></h2>
+                <p class="excerpt">
+                
+                我们在使用第三方库的时候一般有三种接入方式：
+
+直接把第三方库的源码拖入工程
+通过CocoaPods等包管理工具进行引入
+通过.a或者.framework静态库引入
+
+前两种情况一般是用于引入开源的项目，比如AFNetworking、SDWebImage；第三种情况一般是用于引入一些不方便开源的SD
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2019-03-13T06:27:34.000Z" class="post-list__meta--date date">2019/03/13</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/iOS/">iOS</a>
+
+</span><a class="btn-border-small" href="/2019/03/13/sdk-development/">继续阅读</a></div>
+
+            </div>
+        
+
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">更早的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2019/01/23/mac-proxy/" title="Mac上的各种代理设置">Mac上的各种代理设置</a></h2>
+                <p class="excerpt">
+                
+                在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇文章来教大家搭建自己的翻墙服务器，里面关于VPS推荐的部分已经过时了，但是操作步骤还是有用的。
+但是等你把一切都配置好之后你会发现似乎只有浏览器可以正常访问被屏蔽的网站，常用的一些服务比如git、ssh、npm、termina
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2019-01-23T03:31:53.000Z" class="post-list__meta--date date">2019/01/23</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/macOS/">macOS</a>
+
+</span><a class="btn-border-small" href="/2019/01/23/mac-proxy/">继续阅读</a></div>
+
+            </div>
+        
+   
+</section>
+
+
+
+<section class="post-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'skx926'; // required: replace example with your forum shortname
+
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</section>
+
+
+
+
+            <footer class="footer">
+    <span class="footer__copyright">
+        本站点采用<a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>
+    </span>
+    <span class="footer__copyright">
+        基于 <a href="http://hexo.io">Hexo</a> 搭建，感谢 <a href="https://pages.github.com/">GitHub Pages</a> 提供免费的托管服务
+    </span>
+    <span class="footer__copyright">
+        &copy; 2020 - 本站由 <a href="/">Kyle Sun</a> 创建,
+        使用<a href="https://github.com/skx926/hexo-theme-vno">hexo-theme-vno</a>主题
+    </span>
+</footer>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="/js/main.js"></script>
+
+     
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-73055515-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>

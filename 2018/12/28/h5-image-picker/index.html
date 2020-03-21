@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    
+    <title>移动端H5页面选择图片的各种姿势 | CODE &amp; ZEN</title>
+    <meta name="renderer" content="webkit">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta name="description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="移动端H5页面选择图片的各种姿势 | CODE &amp; ZEN">
+    <meta name="twitter:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="移动端H5页面选择图片的各种姿势 | CODE &amp; ZEN">
+    <meta property="og:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    
+    <meta name="author" content="Kyle Sun">
+    
+    <link rel="stylesheet" href="/css/vno.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+
+    
+    <link rel="icon" href="/images/favicon.jpg">
+    
+
+    
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+    
+    
+    <meta name="generator" content="hexo"/>
+    
+    <link rel="alternate" type="application/rss+xml" title="CODE &amp; ZEN" href="/atom.xml">
+    
+
+    <link rel="canonical" href="http://skx926.me/2018/12/28/h5-image-picker/"/>
+
+    
+    <link rel="author" href="https://plus.google.com/118328736821069549236"/>
+    
+    <!-- fancybox support -->
+    
+        <script src="/lib/jquery-3.3.1.min.js"></script>
+        <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.min.css">
+        <script src="/lib/fancybox/dist/jquery.fancybox.min.js"></script>
+        <script src="/js/wrapImage.js"></script>
+    
+</head>
+
+<body class="home-template no-js">
+
+    <span class="mobile btn-mobile-menu">
+        <i class="fa fa-list btn-mobile-menu__icon"></i>
+        <i class="fa fa-angle-up btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+<header class="panel-cover panel-cover--collapsed" style="background-image: url(/images/background-cover.jpg)">
+  <div class="panel-main">
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        <a href="/" title="前往 CODE &amp; ZEN 的主页"><img src="/images/logo.jpg" width="80" alt="CODE &amp; ZEN logo" class="panel-cover__logo logo" /></a>
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage for CODE &amp; ZEN">CODE &amp; ZEN</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">凯旋的博客</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">我是孙凯旋 @skx926<br>一名来自中国的 iOS 开发者<br>写过 Android<br>也会点 Web<br>深知付出更多才能收获更多<br>唯有在技术的道路上勤勤恳恳<br>方得片刻安心</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        <div class="navigation-wrapper">
+          <div>
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+              <li class="navigation__item"><a href="/#blog" title="访问博客" class="blog-button">文章</a></li>
+            
+              <li class="navigation__item"><a href="/archives">归档</a></li>
+            
+            </ul>
+          </nav>
+          </div>
+          <div>
+          <nav class="cover-navigation navigation--social">
+  <ul class="navigation">
+
+  <!-- Weibo-->
+  
+  <li class="navigation__item">
+    <a href="http://weibo.com/ikeson" title="我的微博" target="_blank">
+      <i class='social fa fa-weibo'></i>
+      <span class="label">Weibo</span>
+    </a>
+  </li>
+
+
+  <!-- Github -->
+  
+  <li class="navigation__item">
+    <a href="https://github.com/skx926" title="查看我的GitHub主页" target="_blank">
+      <i class='social fa fa-github'></i>
+      <span class="label">Github</span>
+    </a>
+  </li>
+
+
+<!-- Stack Overflow -->
+        
+
+  <!-- Google Plus -->
+  
+  <li class="navigation__item">
+    <a href="https://plus.google.com/118328736821069549236" title="Google+" target="_blank">
+      <i class='social fa fa-google-plus-square'></i>
+      <span class="label">Google+</span>
+    </a>
+  </li>
+
+
+<!-- Facebook -->
+
+
+<!-- Twitter -->
+
+  <li class="navigation__item">
+    <a href="https://twitter.com/skx926" title="上Twitter找我" target="_blank">
+      <i class='social fa fa-twitter'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+<!-- instagram -->
+
+  <li class="navigation__item">
+    <a href="https://www.instagram.com/skx926" title="上Instagram找我" target="_blank">
+      <i class='social fa fa-instagram'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+
+  <li class="navigation__item">
+    <a href="/atom.xml" title="RSS" target="_blank">
+      <i class='social fa fa-rss'></i>
+      <span class="label">RSS</span>
+    </a>
+  </li>
+
+
+
+  </ul>
+</nav>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay cover-disabled"></div>
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <article class="post-container post-container--single">
+
+  <header class="post-header">
+    <div class="post-meta">
+      <time datetime="2018-12-28T09:05:50.000Z" class="post-list__meta--date date">2018/12/28</time>
+ &#8226; <span class="post-meta__tags tags">分类&nbsp;
+  <a class="tag-link" href="/tags/iOS/">iOS</a>
+
+</span>
+    </div>
+    <h1 class="post-title">移动端H5页面选择图片的各种姿势</h1>
+  </header>
+
+  <section class="post">
+    <h2 id="通过html的input标签调用系统api进行选择">通过HTML的<code>&lt;input&gt;</code>标签调用系统api进行选择</h2>
+<p>通过下面的代码就可以调用系统的api选择图片</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 选择文件 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 选择图片 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span> <span class="attr">accept</span>=<span class="string">'image/*'</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 选择多张图片 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span> <span class="attr">multiple</span> <span class="attr">accept</span>=<span class="string">'image/*'</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 拍照 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">"file"</span> <span class="attr">capture</span>=<span class="string">'camera'</span> <span class="attr">accept</span>=<span class="string">'image/*'</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这种方式的优点就是使用简单，缺点也很明显：</p>
+<ul>
+<li>没有办法进行自定义的操作，比如说我们希望选择到的图片是压缩过的图片，而不是原图</li>
+<li>UI是系统默认的样式，不能自定义</li>
+</ul>
+<p>综上所述，我们伟大的产品经理美眉肯定是不会满足于系统的样式的，所以才有了下面的姿势</p>
+<h2 id="通过naitive端选择图片回传给h5">通过Naitive端选择图片回传给H5</h2>
+<p>这个姿势就涉及到Hybrid混合开发的框架了，现在很多App里面都有一套自己的Hybrid框架，关于这个东西，这里就不多说了，简而言之：就是h5页面通过jsbridge来和Native端进行交互，调用原生的一些能力。</p>
+<p>既然h5可以调用Native的能力了，那我们就可以在Native实现一个高度自定义的图片选择器，解决前一种姿势不候灵活的问题。</p>
+<p>这个姿势乍一看很完美，但是也有个很棘手的问题：由于iOS应用程序沙盒的限制，我们把本地图片路径回传给h5之后，h5其实是没有权限来访问这个路径的，当然也就拿不到图片的数据。</p>
+<p>要解决这个问题，有两套方案：</p>
+<ul>
+<li><p>方案一：Native端拿到图片之后将它上传到图片服务器，然后把图片的地址回传给h5，h5通过这个地址获取图片</p></li>
+<li><p>方案二：Native端拿到图片之后将图片数据转成base64的字符串，直接回传给h5</p></li>
+<li><p>方案三：Native端拿到图片之后虚拟出一个url scheme或者http地址回传给h5，h5在加载这个地址的时候Native端拦截这个请求，然后把图片数据作为请求的response进行返回</p>
+<img src="/2018/12/28/h5-image-picker/flow.png"></li>
+</ul>
+<p>对于方案一，我们应该都很熟悉。这个方案的优点就是用户的图片都会在服务端存储一份，对于做用户数据分析什么的有用；缺点也很明显：</p>
+<ol type="1">
+<li>需要Native端把图片上传到服务端，图片比较大、多，或者网络环境差的时候耗时会很久</li>
+<li>需要服务端资源的支持：包括技术人员、服务器等。数据量比较大的话服务器和带宽的开支会很大</li>
+<li>如果第三方h5需要将图片存储到自己的服务器，就需要先通过网络请求把图片又下载到本地再上传</li>
+</ol>
+<p>对于方案二，相对于其他两种方案，优点就是步骤简单，但是缺点很致命：由于我们h5和Native交互都采用的是json格式的字符串，安卓端使用的Google自家的<a href="https://github.com/google/gson" target="_blank" rel="noopener">Gson库</a>对于解析json文件的大小有所限制。如果要同时传几张原图的话，那数据的大小就得有几十MB，这个大小超过限制。再者，将图片的二进制数据转为base64的string，也有一定的性能损耗。</p>
+<p>对于方案三，缺点几乎没有，我们来说说它的优点：</p>
+<ol type="1">
+<li>Native拿到图片之后存储在沙盒里，速度快，不会涉及到服务端的任何东西</li>
+<li>第三方h5获取图片数据也是在应用内完成，不涉及网络，速度很快</li>
+<li>对于数据的大小没有限制，后期要扩展支持视频或者其他文件也很方便</li>
+</ol>
+<p>结果显而易见，我们最终采用了方案三，下面我们来说说方案三具体的实现。</p>
+<h4 id="保存图片到沙盒">保存图片到沙盒</h4>
+<p>我们使用自定义的图片选择器选择完成之后会拿到一个UIImage的数组，我们把这些图片进行压缩之后保存在<code>/tmp</code>文件夹里，这里需要注意给每张图片一个唯一的名称，而且为了和下次选择的图片名称不冲突，有个简单的办法就是用当前时间戳（iOS的时间戳是精确到毫秒的，没有人可以在1毫秒内选择两次图片），然后再拼一个图片的序列号，比如<code>1548918117.421-6.jpg</code>。</p>
+<h4 id="生成虚拟地址">生成虚拟地址</h4>
+<p>生成虚拟地址有两种方式，这两种方式的请求我们客户端都是可以拦截到并返回正确的数据的，但是h5使用起来的感受却是完全不同的。</p>
+<ol type="1">
+<li><p>自定义scheme：比如<code>shfile://1548918117.421-6.jpg</code></p></li>
+<li><p>自定义host：比如<code>https://custom-host/1548918117.421-6.jpg</code></p></li>
+</ol>
+<h4 id="h5加载图片">H5加载图片</h4>
+<p>如果h5只是使用<code>&lt;img&gt;</code>标签来展示选择到的图片的话，上面这两种方式没有任何区别。如果h5要获取到图片的数据上传自己的后台的话，第二种方式就可以通过<code>XMLHttpRequest</code>发起一个http请求就能获取到图片数据：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> request = <span class="keyword">new</span> XMLHttpRequest();</span><br><span class="line">request.open(<span class="string">'GET'</span>, file.path);</span><br><span class="line">request.responseType = <span class="string">'blob'</span>;</span><br><span class="line">request.onreadystatechange = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (request.readyState !== <span class="number">4</span>) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">if</span> (request.status == <span class="number">200</span>) &#123;</span><br><span class="line">        <span class="comment">// 拿到二进制图片数据</span></span><br><span class="line">        <span class="keyword">let</span> blob = request.response;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'下载失败'</span>);&#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">request.send();</span><br></pre></td></tr></table></figure>
+<p>而第一种方式就无法通过http请求来获取了，但是也是有办法获取的，我所知道的一种办法就是在<code>&lt;img&gt;</code>的<code>onload</code>方法中通过canvas重绘图片从而拿到图片数据:</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="keyword">let</span> image = <span class="keyword">new</span> Image();</span><br><span class="line">image.onload = <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> canvas = <span class="built_in">document</span>.createElement(<span class="string">'canvas'</span>);</span><br><span class="line">    canvas.width = <span class="keyword">this</span>.width;</span><br><span class="line">    canvas.height = <span class="keyword">this</span>.height;</span><br><span class="line">    <span class="keyword">let</span> ctx = canvas.getContext(<span class="string">'2d'</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 重绘</span></span><br><span class="line">    ctx.drawImage(<span class="keyword">this</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 拿到base64形式图片数据</span></span><br><span class="line">    <span class="keyword">let</span> dataURL = canvas.toDataURL(<span class="string">'image/png'</span>);</span><br><span class="line">&#125;</span><br><span class="line">image.src = <span class="string">'shfile://1548918117.421-6.jpg'</span>;</span><br></pre></td></tr></table></figure>
+<p>这种方式在请求加载获取图片之外还需要创建Image对象、创建canvas对象、重绘图片、base64转换等步骤，毫无疑问是很低效的，所以我们采用第二种方式。</p>
+<h4 id="通过nsurlprotocol拦截请求并返回数据">通过NSURLProtocol拦截请求并返回数据</h4>
+<p>关于NSURLProtocol，我在另一篇<a href="http://ky1e.me/2019/01/24/32.nsurlprotocol" target="_blank" rel="noopener">文章</a>中做了介绍，这里假设你已经知道它怎么用了。</p>
+<p>我们首先注册一个https的scheme，然后创建一个继承于<code>NSURLProtocol</code>的类，这个类的头文件和实现文件如下所示：</p>
+<p>CustomURLProtocol.h</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="built_in">NSString</span> * <span class="keyword">const</span> CustomInterceptHost = <span class="string">@"custom-host"</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">CustomURLProtocol</span> : <span class="title">NSURLProtocol</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>CustomURLProtocol.m</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#import <span class="meta-string">"CustomURLProtocol.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">CustomURLProtocol</span></span></span><br><span class="line"></span><br><span class="line">+ (<span class="built_in">BOOL</span>)canInitWithRequest:(<span class="built_in">NSURLRequest</span> *)request &#123;</span><br><span class="line">    <span class="comment">// 只拦截我们自定义host的请求</span></span><br><span class="line">    <span class="keyword">if</span> ([request.URL.host isEqualToString:CustomInterceptHost]) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="built_in">NSURLRequest</span> *)canonicalRequestForRequest:(<span class="built_in">NSURLRequest</span> *)request &#123;</span><br><span class="line">    <span class="keyword">return</span> request;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)startLoading &#123;</span><br><span class="line">    <span class="comment">// 获取链接中的图片名称</span></span><br><span class="line">    <span class="built_in">NSString</span> *name = <span class="keyword">self</span>.request.URL.lastPathComponent;</span><br><span class="line">    <span class="built_in">NSString</span> *filePath = [[<span class="keyword">self</span> directory] stringByAppendingString:name];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 设置请求头，解决跨域问题</span></span><br><span class="line">    <span class="built_in">NSMutableDictionary</span>&lt;<span class="built_in">NSString</span> *, <span class="built_in">NSString</span> *&gt; *headerFields = [<span class="built_in">NSMutableDictionary</span>&lt;<span class="built_in">NSString</span> *, <span class="built_in">NSString</span> *&gt; dictionary];</span><br><span class="line">    headerFields[<span class="string">@"Access-Control-Allow-Origin"</span>] = <span class="string">@"*"</span>;</span><br><span class="line">    headerFields[<span class="string">@"Access-Control-Allow-Headers"</span>] = <span class="string">@"Origin, X-Requested-With, Content-Type"</span>;</span><br><span class="line">    headerFields[<span class="string">@"Content-Type"</span>] = <span class="keyword">self</span>.request.allHTTPHeaderFields[<span class="string">@"Accept"</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 创建http响应请求</span></span><br><span class="line">    <span class="built_in">NSHTTPURLResponse</span> *httpResponse;</span><br><span class="line">    <span class="keyword">if</span> ([[<span class="built_in">NSFileManager</span> defaultManager] fileExistsAtPath:filePath]) &#123;</span><br><span class="line">        httpResponse = [[<span class="built_in">NSHTTPURLResponse</span> alloc] initWithURL:<span class="keyword">self</span>.request.URL statusCode:<span class="number">200</span> HTTPVersion:<span class="literal">nil</span> headerFields:headerFields];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        httpResponse = [[<span class="built_in">NSHTTPURLResponse</span> alloc] initWithURL:<span class="keyword">self</span>.request.URL statusCode:<span class="number">404</span> HTTPVersion:<span class="literal">nil</span> headerFields:headerFields];</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">NSData</span> *imageData = [<span class="built_in">NSData</span> dataWithContentsOfFile:filePath];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 响应请求</span></span><br><span class="line">    [<span class="keyword">self</span>.client URLProtocol:<span class="keyword">self</span> didReceiveResponse:httpResponse cacheStoragePolicy:<span class="built_in">NSURLCacheStorageNotAllowed</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 返回图片数据</span></span><br><span class="line">    [<span class="keyword">self</span>.client URLProtocol:<span class="keyword">self</span> didLoadData:imageData];</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 结束响应</span></span><br><span class="line">    [<span class="keyword">self</span>.client URLProtocolDidFinishLoading:<span class="keyword">self</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)stopLoading &#123;</span><br><span class="line">    <span class="comment">// Do nothing.</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 图片存储路径</span></span><br><span class="line">- (<span class="built_in">NSString</span> *)directory &#123;</span><br><span class="line">    <span class="keyword">return</span> [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%@/tmp/"</span>, <span class="built_in">NSHomeDirectory</span>()];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>实现的逻辑比较简单，上面的代码里面我也做了注释，这里就不多讲了。</p>
+<p>以上就是移动端H5页面选择图片的各种姿势，不知道还有没有其他更好的姿势，如果有的话，还请在下面留言交流。</p>
+
+  </section>
+
+</article>
+
+<section class="read-more">
+     
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">最近的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2019/01/23/mac-proxy/" title="Mac上的各种代理设置">Mac上的各种代理设置</a></h2>
+                <p class="excerpt">
+                
+                在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇文章来教大家搭建自己的翻墙服务器，里面关于VPS推荐的部分已经过时了，但是操作步骤还是有用的。
+但是等你把一切都配置好之后你会发现似乎只有浏览器可以正常访问被屏蔽的网站，常用的一些服务比如git、ssh、npm、termina
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2019-01-23T03:31:53.000Z" class="post-list__meta--date date">2019/01/23</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/macOS/">macOS</a>
+
+</span><a class="btn-border-small" href="/2019/01/23/mac-proxy/">继续阅读</a></div>
+
+            </div>
+        
+
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">更早的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2018/10/19/remove-default-input-source/" title="删除macOS自带的英文输入法">删除macOS自带的英文输入法</a></h2>
+                <p class="excerpt">
+                
+                macOS自带的输入法支持的语言很多，但是词库不够丰富，所以我们一般都会安装搜狗输入法。
+搜狗输入法是支持中文和英文输入的，有时候我们处在英文状态，想要切换到中文。如果我们不查看状态栏的输入法状态的话很难判断当前是搜狗的英文输入法还是系统自带的英文输入法。这个时候我一般会直接尝试用快捷键进行切换。
+
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2018-10-19T06:22:25.000Z" class="post-list__meta--date date">2018/10/19</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/macOS/">macOS</a>
+
+</span><a class="btn-border-small" href="/2018/10/19/remove-default-input-source/">继续阅读</a></div>
+
+            </div>
+        
+   
+</section>
+
+
+
+<section class="post-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'skx926'; // required: replace example with your forum shortname
+
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</section>
+
+
+
+
+            <footer class="footer">
+    <span class="footer__copyright">
+        本站点采用<a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>
+    </span>
+    <span class="footer__copyright">
+        基于 <a href="http://hexo.io">Hexo</a> 搭建，感谢 <a href="https://pages.github.com/">GitHub Pages</a> 提供免费的托管服务
+    </span>
+    <span class="footer__copyright">
+        &copy; 2020 - 本站由 <a href="/">Kyle Sun</a> 创建,
+        使用<a href="https://github.com/skx926/hexo-theme-vno">hexo-theme-vno</a>主题
+    </span>
+</footer>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="/js/main.js"></script>
+
+     
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-73055515-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    
+    <title>打造一台你的专属黑苹果 | CODE &amp; ZEN</title>
+    <meta name="renderer" content="webkit">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta name="description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="打造一台你的专属黑苹果 | CODE &amp; ZEN">
+    <meta name="twitter:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="打造一台你的专属黑苹果 | CODE &amp; ZEN">
+    <meta property="og:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    
+    <meta name="author" content="Kyle Sun">
+    
+    <link rel="stylesheet" href="/css/vno.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+
+    
+    <link rel="icon" href="/images/favicon.jpg">
+    
+
+    
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+    
+    
+    <meta name="generator" content="hexo"/>
+    
+    <link rel="alternate" type="application/rss+xml" title="CODE &amp; ZEN" href="/atom.xml">
+    
+
+    <link rel="canonical" href="http://skx926.me/2016/11/28/make-your-own-hackintosh/"/>
+
+    
+    <link rel="author" href="https://plus.google.com/118328736821069549236"/>
+    
+    <!-- fancybox support -->
+    
+        <script src="/lib/jquery-3.3.1.min.js"></script>
+        <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.min.css">
+        <script src="/lib/fancybox/dist/jquery.fancybox.min.js"></script>
+        <script src="/js/wrapImage.js"></script>
+    
+</head>
+
+<body class="home-template no-js">
+
+    <span class="mobile btn-mobile-menu">
+        <i class="fa fa-list btn-mobile-menu__icon"></i>
+        <i class="fa fa-angle-up btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+<header class="panel-cover panel-cover--collapsed" style="background-image: url(/images/background-cover.jpg)">
+  <div class="panel-main">
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        <a href="/" title="前往 CODE &amp; ZEN 的主页"><img src="/images/logo.jpg" width="80" alt="CODE &amp; ZEN logo" class="panel-cover__logo logo" /></a>
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage for CODE &amp; ZEN">CODE &amp; ZEN</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">凯旋的博客</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">我是孙凯旋 @skx926<br>一名来自中国的 iOS 开发者<br>写过 Android<br>也会点 Web<br>深知付出更多才能收获更多<br>唯有在技术的道路上勤勤恳恳<br>方得片刻安心</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        <div class="navigation-wrapper">
+          <div>
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+              <li class="navigation__item"><a href="/#blog" title="访问博客" class="blog-button">文章</a></li>
+            
+              <li class="navigation__item"><a href="/archives">归档</a></li>
+            
+            </ul>
+          </nav>
+          </div>
+          <div>
+          <nav class="cover-navigation navigation--social">
+  <ul class="navigation">
+
+  <!-- Weibo-->
+  
+  <li class="navigation__item">
+    <a href="http://weibo.com/ikeson" title="我的微博" target="_blank">
+      <i class='social fa fa-weibo'></i>
+      <span class="label">Weibo</span>
+    </a>
+  </li>
+
+
+  <!-- Github -->
+  
+  <li class="navigation__item">
+    <a href="https://github.com/skx926" title="查看我的GitHub主页" target="_blank">
+      <i class='social fa fa-github'></i>
+      <span class="label">Github</span>
+    </a>
+  </li>
+
+
+<!-- Stack Overflow -->
+        
+
+  <!-- Google Plus -->
+  
+  <li class="navigation__item">
+    <a href="https://plus.google.com/118328736821069549236" title="Google+" target="_blank">
+      <i class='social fa fa-google-plus-square'></i>
+      <span class="label">Google+</span>
+    </a>
+  </li>
+
+
+<!-- Facebook -->
+
+
+<!-- Twitter -->
+
+  <li class="navigation__item">
+    <a href="https://twitter.com/skx926" title="上Twitter找我" target="_blank">
+      <i class='social fa fa-twitter'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+<!-- instagram -->
+
+  <li class="navigation__item">
+    <a href="https://www.instagram.com/skx926" title="上Instagram找我" target="_blank">
+      <i class='social fa fa-instagram'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+
+  <li class="navigation__item">
+    <a href="/atom.xml" title="RSS" target="_blank">
+      <i class='social fa fa-rss'></i>
+      <span class="label">RSS</span>
+    </a>
+  </li>
+
+
+
+  </ul>
+</nav>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay cover-disabled"></div>
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <article class="post-container post-container--single">
+
+  <header class="post-header">
+    <div class="post-meta">
+      <time datetime="2016-11-28T15:22:06.000Z" class="post-list__meta--date date">2016/11/28</time>
+ &#8226; <span class="post-meta__tags tags">分类&nbsp;
+  <a class="tag-link" href="/tags/黑苹果/">黑苹果</a>
+
+</span>
+    </div>
+    <h1 class="post-title">打造一台你的专属黑苹果</h1>
+  </header>
+
+  <section class="post">
+    <p>要打造一台你的专属黑苹果需要经过以下四个大的步骤：</p>
+<ol type="1">
+<li>配件购买</li>
+<li>组装机器</li>
+<li>安装系统</li>
+<li>安装驱动</li>
+</ol>
+<h3 id="配件购买">1.配件购买</h3>
+<p>对于Mac的兼容配件的购买可以查看tonymacx86的<a href="https://www.tonymacx86.com/buyersguide/november/2016" target="_blank" rel="noopener">Buyer's Guide</a>，里面已经很详细的列出了很多推荐的配件和购买的链接。美中不足的是里面给出的链接都是国外的网站，不支持国内的邮寄地址。国内要想买就得通过海淘过程比较繁琐，有些转运公司也不支持电脑配件的邮寄，邮寄的周期也比较长，一般都得半个月。我自己以前没有海淘过东西，所以不推荐，当然以前如果有过海淘经历的朋友可以根据自己的情况来定。我个人推荐京东和天猫，京东相对来说更加正规而且送货快（这个很重要）。</p>
+<p>tonymac上列出了组装一台电脑所有需要的配件，其实要与Mac系统兼容，最主要的就是主板和显卡，基本这两个兼容了就没啥大问题。因为主板上包含网卡、声卡、电源管理等芯片。像机箱、电源、硬盘、内存等等这些配件基本上没有兼容性的问题（前提是接口相同），这些东西你都可以根据自己的喜好进行购买。</p>
+<p>购买配件之前首先要确定你想要哪种类型的主板，主板根据面积从大到小可以分为ATX、mATX、iTX。最常见的就是ATX类型的主板，也是体积最大的。不同大小的主板就意味着需要选用不同形状的机箱，不同的接口，这个务必要搞清楚。</p>
+<p>下面是我购买的配件列表：</p>
+<p><a href="https://item.jd.com/1748176.html" target="_blank" rel="noopener">英特尔（Intel）酷睿四核 i7-6700k 1151接口 盒装CPU处理器</a> <a href="https://item.jd.com/1791949.html" target="_blank" rel="noopener">技嘉（GIGABYTE）Z170X-Gaming 5主板 (Intel Z170/LGA 1151)</a> <a href="https://item.jd.com/1533984592.html" target="_blank" rel="noopener">影驰（Galaxy) GTX 970 名人堂海外版 1178MHz 4GB D5独立游戏显卡</a> <a href="https://item.jd.com/3159710.html" target="_blank" rel="noopener">英睿达(Crucial)铂胜运动LT系列DDR4 2400 16G（8Gx2 套装）台式机内存</a> <a href="https://item.jd.com/600637.html" target="_blank" rel="noopener">振华（SUPER FLOWER）额定650W 冰山金蝶GX650 电源</a> <a href="https://item.jd.com/598827.html" target="_blank" rel="noopener">九州风神（DEEPCOOL） 玄冰400 CPU散热器</a> <a href="https://item.jd.com/1579807.html" target="_blank" rel="noopener">先马（SAMA）坦克 黑色 中塔式电脑机箱</a> <a href="https://item.jd.com/968915.html" target="_blank" rel="noopener">TP-LINK TL-WDN4800 450M双频无线PCI-E网卡</a></p>
+<p>其中的显卡是在闲鱼上买了个二手的，这些配件总共加起来7000+，再加一台Dell的4K显示器P2415Q总共10000+，性能跟2015年的iMac 5K差不多，价格却只有它的一半。</p>
+<h3 id="组装机器">2.组装机器</h3>
+<p>这个过程其实没什么说的。如果你是第一次组装电脑，可能会无从下手。我建议你找个装机教程，花点时间一步一步自己动手来做。其实装机的过程也是蛮有趣的，把一堆奇形怪状的零件组装在一起，点亮的那一刻还是很爽的。</p>
+<p>需要注意的CPU的安装要特别小心，一定要方向和位置对准了再安装。主板上的CPU卡槽那里的成百上千根针很细很脆弱，一旦把压弯了就很麻烦了。另外一个需要注意的点是现在很多机箱都支持走背线，比如我买的这一款先马坦克。走背线可以让机箱里的走线清晰明了，看着舒服很多。装完电脑各种配件的保修卡、发票等最好保留好，日后也许用得到。</p>
+<p>晒一下我的成果：</p>
+<img src="/2016/11/28/make-your-own-hackintosh/case.jpg" title="机箱">
+<h3 id="安装系统">3.安装系统</h3>
+<p>安装的具体过程我在这里就不细说了，你可以根据这个<a href="https://www.tonymacx86.com/threads/unibeast-install-macos-sierra-on-any-supported-intel-based-pc.200564/" target="_blank" rel="noopener">教程</a>来安装。</p>
+<p>我说一下过程中需要注意到以下两点：</p>
+<ol type="1">
+<li>教程里说安装Sierra需要16G或以上的U盘，其实理论上8G的U盘就够了。为什么教程里需要16G呢？正常来说8G的U盘可用容量肯定不到8G，但是也不会差多少。但是有些U盘格式化之后的容量却只有7G多一点，这样可能写入系统再加上<a href="https://www.tonymacx86.com/resources/categories/tonymacx86-downloads.3/" target="_blank" rel="noopener">MultiBeast</a>等一些工具就不够了。</li>
+<li>BIOS的设置可以说是非常重要，它关系到你能不能进入到系统安装界面。如果不能顺利进入系统安装界面，这无疑是对你的重大打击。BIOS中需要重点照顾的选项包括：</li>
+</ol>
+<ul>
+<li>设置 Extreme Memory Profile(X.M.P) 为 Profile1</li>
+<li>设置 Secure Boot 为 Disabled</li>
+<li>设置 XHCI Hand-off 为 Enabled</li>
+<li>设置 Port 60/64 Emulation 为 Disabled</li>
+<li>设置 Super IO Configuration 里的 Serial Port 1 为 Disabled</li>
+<li>设置 VT-d 为 Disabled</li>
+<li>设置 IOAPIC 24-119 Entries 为 Disabled</li>
+<li>设置 Wake on LAN 为 Disabled</li>
+<li>设置 Legacy USB Support 为 Auto</li>
+</ul>
+<p>有一些BIOS的设置对于安装系统来说不是必须的，但是可能会导致一些Bug的产生，后面的问题解决部分我会进行详细的说明。</p>
+<h3 id="安装驱动">4.安装驱动</h3>
+<p>前面的<a href="https://www.tonymacx86.com/threads/unibeast-install-macos-sierra-on-any-supported-intel-based-pc.200564/" target="_blank" rel="noopener">教程</a>其实已经包括了使用<a href="https://www.tonymacx86.com/resources/categories/tonymacx86-downloads.3/" target="_blank" rel="noopener">MultiBeast</a>来安装驱动，我为什么要把这一块单独拿出来讲呢？其实主要是觉得<a href="https://www.tonymacx86.com/threads/unibeast-install-macos-sierra-on-any-supported-intel-based-pc.200564/" target="_blank" rel="noopener">教程</a>里说的还不够细，你并不知道你的声卡、网卡等是什么型号，所以用<a href="https://www.tonymacx86.com/resources/categories/tonymacx86-downloads.3/" target="_blank" rel="noopener">MultiBeast</a>也就不知道按选择哪个驱动来进行安装。这个问题其实不难解决，你可以通过搜索跟你的主板相同或相近的人的配置来选择你的驱动，比如我的MultiBeast的配置就如下图所示：</p>
+<img src="/2016/11/28/make-your-own-hackintosh/multibeast.png" title="MultiBeast">
+<p>安装N卡的驱动需要到NVIDIA的网站下载<a href="http://www.nvidia.com/Download/index.aspx?lang=en-us" target="_blank" rel="noopener">Web Driver</a>进行安装，安装完成之后需要配置Clover的config.list文件才能够启用NVIDIA的显卡驱动，10.12以前的系统需要设置在Boot里的Arguments里面添加nvda_drv=1，10.12以后的系统需要在SystemParameters中添加NvidiaWeb属性并设置为YES。config.plist文件位于EFI分区的/EFI/CLOVER/目录中，EFI分区默认是没有挂载的，要对config.plist文件进行操作，首先得挂在EFI分区，我建议使用<a href="https://www.tonymacx86.com/resources/clover-configurator.328/" target="_blank" rel="noopener">Clover Configurator</a>来进行对EFI分区的挂载和对config.plist文件的操作。这个软件长这样：</p>
+<img src="/2016/11/28/make-your-own-hackintosh/configurator.png" title="Clover Configurator">
+<p>安装完驱动重启以下你的机器基本上就可以正常的运行了。</p>
+<h3 id="安装过程中遇到的问题和解决方案">安装过程中遇到的问题和解决方案</h3>
+<p><a href="https://www.tonymacx86.com/threads/unibeast-install-macos-sierra-on-any-supported-intel-based-pc.200564/" target="_blank" rel="noopener">教程</a>的最后面包含了一些比较常见的问题的解决方案。</p>
+<p>这里还有一片帖子<a href="https://www.tonymacx86.com/threads/readme-common-some-unsolved-problems-in-10-12-sierra.202316/" target="_blank" rel="noopener">Common (some unsolved) Problems in 10.12 Sierra</a>里面收集了许多用户在安装最新系统10.12 Sierra遇到的问题，很有参考意义。</p>
+<p>我在这里着重说一下我的这套配置在安装过程中所遇到的问题：</p>
+<h5 id="无法进入安装界面">无法进入安装界面</h5>
+<p>这个问题其实是由BIOS的某一项设置没有设置正确所导致的，具体是哪一项我也记不清楚了。只要做到我上面列出的那些设置，一般应该问题不到。</p>
+<h5 id="屏幕左上角有个黑色的条在不停的闪动">屏幕左上角有个黑色的条在不停的闪动</h5>
+<p>这个问题跟英特尔第六代CPU的核显HD530有关系，因为我一开始还没有安装独立显卡，所以会遇到这个问题，如果你使用独立显卡，就不会有这个问题。解决办法其实在config.plist文件里添加一些东西，具体添加的内容可以看这个帖子<a href="https://www.tonymacx86.com/threads/skylake-intel-hd-530-graphics-glitch-fix.206410/" target="_blank" rel="noopener">Skylake Intel HD 530 Graphics Glitch Fix</a>。</p>
+<h5 id="关机之后会自动重启">关机之后会自动重启</h5>
+<p>这个问题的解决办法就是使用<a href="https://www.tonymacx86.com/resources/clover-configurator.328/" target="_blank" rel="noopener">Clover Configurator</a>打开config.plist文件并勾选Acpi部分的FixShutdown选项。</p>
+<h5 id="wifi使用一段时间之后就会无法联网">WiFi使用一段时间之后就会无法联网</h5>
+<p>这个问题同样跟BIOS的设置有关，设置 Wake on LAN 为 Disabled就可以解决。</p>
+<h5 id="睡眠之后无法唤醒屏幕">睡眠之后无法唤醒屏幕</h5>
+<p>解决这个问题需要在config.plist中设置darkwake=0，意思就是禁用Mac的<a href="https://support.apple.com/zh-cn/HT204032" target="_blank" rel="noopener">Power Nap</a>功能。对于darkwake这个参数的其他值的意义可以查看这篇文章<a href="http://www.yekki.me/power-nap-and-darkwake-argument/" target="_blank" rel="noopener">Power Nap功能与Darkwake参数</a>。</p>
+<h5 id="睡眠之后又会立刻唤醒">睡眠之后又会立刻唤醒</h5>
+<p>这个问题其实跟USB有关，当我选择睡眠之后拔掉鼠标和键盘等USB设备之后就能正常的睡眠了。我之前 BIOS中设置Legacy USB Support 为 enabled，当我尝试把它改成Auto之后睡眠的问题就解决了。</p>
+<h5 id="睡眠之后声卡驱动失效">睡眠之后声卡驱动失效</h5>
+<p>下载<a href="https://www.tonymacx86.com/attachments/codeccommander-kext-zip.146742/" target="_blank" rel="noopener">CodecCommander.kext</a>并使用<a href="https://www.tonymacx86.com/resources/kextbeast.32/" target="_blank" rel="noopener">KextBeast</a>安装kext文件就可以解决这个问题。</p>
+<h5 id="系统可以正常进入但是无法启动recovery-hd">系统可以正常进入但是无法启动Recovery HD</h5>
+<p>下载<a href="https://www.tonymacx86.com/resources/fakesmc.325/" target="_blank" rel="noopener">FakeSMC.kext</a>并放到EFI分区的/EFI/CLOVER/kexts/Other目录下。FakeSMC.kext的作用欺骗macOS让它以为你的电脑是一台白苹果，从而顺利安装和启动。</p>
+<hr>
+<p>到这里我的黑苹果已经折腾的差不多了，可以愉快的玩耍了！如果安装过程中遇到任何问题，欢迎到下面留言与我交流。</p>
+<p>最后再送上美图一张。</p>
+<img src="/2016/11/28/make-your-own-hackintosh/computer.jpg" title="Computer">
+
+  </section>
+
+</article>
+
+<section class="read-more">
+     
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">最近的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2017/01/15/git-proxy/" title="为Git设置代理">为Git设置代理</a></h2>
+                <p class="excerpt">
+                
+                有人说中国大部分程序员的工作其实就是Copy from Github。当然，这句话有一些戏谑的成分，但是也能从中看出Github对一个程序员对重要性。Github作为全球最大的程序员交友平台，他服务质量肯定是毋庸置疑的。但是由于某些众所周知的原因，Github在天朝访问起来很慢，有时候甚至访问不了。
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2017-01-15T15:18:49.000Z" class="post-list__meta--date date">2017/01/15</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/Mac技巧/">Mac技巧</a>
+
+</span><a class="btn-border-small" href="/2017/01/15/git-proxy/">继续阅读</a></div>
+
+            </div>
+        
+
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">更早的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2016/11/27/hackintosh-again/" title="再战黑苹果">再战黑苹果</a></h2>
+                <p class="excerpt">
+                
+                2012年初，当我和宿舍的小伙伴们决定要做iOS开发的时候我们刚到大二第二学期，还用的是普通的PC。那时候没什么钱，每个月都省吃俭用的，班级和社团的活动都不舍得去，生怕多花一点钱，更别说要买一台iPhone和Mac了。那个时候iPhone 4s才刚出，iPhone 4正如日中天，也许是虚荣心作祟，也
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2016-11-26T17:14:12.000Z" class="post-list__meta--date date">2016/11/27</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/黑苹果/">黑苹果</a>
+
+</span><a class="btn-border-small" href="/2016/11/27/hackintosh-again/">继续阅读</a></div>
+
+            </div>
+        
+   
+</section>
+
+
+
+<section class="post-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'skx926'; // required: replace example with your forum shortname
+
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</section>
+
+
+
+
+            <footer class="footer">
+    <span class="footer__copyright">
+        本站点采用<a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>
+    </span>
+    <span class="footer__copyright">
+        基于 <a href="http://hexo.io">Hexo</a> 搭建，感谢 <a href="https://pages.github.com/">GitHub Pages</a> 提供免费的托管服务
+    </span>
+    <span class="footer__copyright">
+        &copy; 2020 - 本站由 <a href="/">Kyle Sun</a> 创建,
+        使用<a href="https://github.com/skx926/hexo-theme-vno">hexo-theme-vno</a>主题
+    </span>
+</footer>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="/js/main.js"></script>
+
+     
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-73055515-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>

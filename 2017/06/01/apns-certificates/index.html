@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    
+    <title>制作服务端推送时使用的.pem证书 | CODE &amp; ZEN</title>
+    <meta name="renderer" content="webkit">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta name="description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="制作服务端推送时使用的.pem证书 | CODE &amp; ZEN">
+    <meta name="twitter:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="制作服务端推送时使用的.pem证书 | CODE &amp; ZEN">
+    <meta property="og:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    
+    <meta name="author" content="Kyle Sun">
+    
+    <link rel="stylesheet" href="/css/vno.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+
+    
+    <link rel="icon" href="/images/favicon.jpg">
+    
+
+    
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+    
+    
+    <meta name="generator" content="hexo"/>
+    
+    <link rel="alternate" type="application/rss+xml" title="CODE &amp; ZEN" href="/atom.xml">
+    
+
+    <link rel="canonical" href="http://skx926.me/2017/06/01/apns-certificates/"/>
+
+    
+    <link rel="author" href="https://plus.google.com/118328736821069549236"/>
+    
+    <!-- fancybox support -->
+    
+        <script src="/lib/jquery-3.3.1.min.js"></script>
+        <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.min.css">
+        <script src="/lib/fancybox/dist/jquery.fancybox.min.js"></script>
+        <script src="/js/wrapImage.js"></script>
+    
+</head>
+
+<body class="home-template no-js">
+
+    <span class="mobile btn-mobile-menu">
+        <i class="fa fa-list btn-mobile-menu__icon"></i>
+        <i class="fa fa-angle-up btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+<header class="panel-cover panel-cover--collapsed" style="background-image: url(/images/background-cover.jpg)">
+  <div class="panel-main">
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        <a href="/" title="前往 CODE &amp; ZEN 的主页"><img src="/images/logo.jpg" width="80" alt="CODE &amp; ZEN logo" class="panel-cover__logo logo" /></a>
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage for CODE &amp; ZEN">CODE &amp; ZEN</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">凯旋的博客</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">我是孙凯旋 @skx926<br>一名来自中国的 iOS 开发者<br>写过 Android<br>也会点 Web<br>深知付出更多才能收获更多<br>唯有在技术的道路上勤勤恳恳<br>方得片刻安心</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        <div class="navigation-wrapper">
+          <div>
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+              <li class="navigation__item"><a href="/#blog" title="访问博客" class="blog-button">文章</a></li>
+            
+              <li class="navigation__item"><a href="/archives">归档</a></li>
+            
+            </ul>
+          </nav>
+          </div>
+          <div>
+          <nav class="cover-navigation navigation--social">
+  <ul class="navigation">
+
+  <!-- Weibo-->
+  
+  <li class="navigation__item">
+    <a href="http://weibo.com/ikeson" title="我的微博" target="_blank">
+      <i class='social fa fa-weibo'></i>
+      <span class="label">Weibo</span>
+    </a>
+  </li>
+
+
+  <!-- Github -->
+  
+  <li class="navigation__item">
+    <a href="https://github.com/skx926" title="查看我的GitHub主页" target="_blank">
+      <i class='social fa fa-github'></i>
+      <span class="label">Github</span>
+    </a>
+  </li>
+
+
+<!-- Stack Overflow -->
+        
+
+  <!-- Google Plus -->
+  
+  <li class="navigation__item">
+    <a href="https://plus.google.com/118328736821069549236" title="Google+" target="_blank">
+      <i class='social fa fa-google-plus-square'></i>
+      <span class="label">Google+</span>
+    </a>
+  </li>
+
+
+<!-- Facebook -->
+
+
+<!-- Twitter -->
+
+  <li class="navigation__item">
+    <a href="https://twitter.com/skx926" title="上Twitter找我" target="_blank">
+      <i class='social fa fa-twitter'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+<!-- instagram -->
+
+  <li class="navigation__item">
+    <a href="https://www.instagram.com/skx926" title="上Instagram找我" target="_blank">
+      <i class='social fa fa-instagram'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+
+  <li class="navigation__item">
+    <a href="/atom.xml" title="RSS" target="_blank">
+      <i class='social fa fa-rss'></i>
+      <span class="label">RSS</span>
+    </a>
+  </li>
+
+
+
+  </ul>
+</nav>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay cover-disabled"></div>
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <article class="post-container post-container--single">
+
+  <header class="post-header">
+    <div class="post-meta">
+      <time datetime="2017-06-01T09:45:41.000Z" class="post-list__meta--date date">2017/06/01</time>
+ &#8226; <span class="post-meta__tags tags">分类&nbsp;
+  <a class="tag-link" href="/tags/iOS开发/">iOS开发</a>
+
+</span>
+    </div>
+    <h1 class="post-title">制作服务端推送时使用的.pem证书</h1>
+  </header>
+
+  <section class="post">
+    <p>服务端要给移动端发送推送消息就需要用到推送证书，但是服务端通常需要的证书 <code>.pem</code> 格式的，并不是我们从Apple的开发者中心下载到的 <code>.cer</code> 格式的文件，所以我们需要对其做一个转换。</p>
+<p>申请推送证书的过程我就不赘述了，这里假设你已经申请好了开发环境和生产环境的推送证书并下载导入到 Mac 钥匙串当中。</p>
+<p>下面我们开始转换，这里我以开发环境为例，生产环境同理：</p>
+<ol type="1">
+<li><p>从钥匙串中分别导出 <code>Apple Development iOS Push Serives</code> 证书和私钥为 <code>cer.p12</code> 和 <code>key.p12</code>（导出的时候会提示输入密码，可以随便设置一个）</p></li>
+<li><p>使用 openssl 将 <code>cer.p12</code> 和 <code>key.p12</code> 转换为 <code>cer.pem</code> 和 <code>key.pem</code>： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ openssl pkcs12 -clcerts -nokeys -out cer.pem -in cer.p12</span><br><span class="line">$ openssl pkcs12 -nocerts -out key.pem -in key.p12</span><br></pre></td></tr></table></figure></p>
+<p>转换的时候会提示输入刚才导出的时候设置的密码。转换私钥的时候还会要求你输入一个新的密码，设置的这个新的密码在服务端连接 APNS 服务器时需要使用。</p></li>
+<li><p>测试生成的文件是否可用： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">// 生产环境请使用 gateway.push.apple.com:2195</span><br><span class="line">$ openssl s_client -connect gateway.sandbox.push.apple.com:2195 -cert cer.pem -key key.pem</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令执行之后会有一大堆的信息输出，我们查看最底部的信息： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">SSL-Session:</span><br><span class="line">    Protocol  : TLSv1</span><br><span class="line">    Cipher    : AES256-SHA</span><br><span class="line">    Session-ID: </span><br><span class="line">    Session-ID-ctx: </span><br><span class="line">    Master-Key: 13BFA2DC5D6550B06BB351A0A16AC1F9CFE343EEC02F71C45F1F451613D689ED507B4445160C10589ECEFEDD6EBF60CD</span><br><span class="line">    Key-Arg   : None</span><br><span class="line">    Start Time: 1496308341</span><br><span class="line">    Timeout   : 300 (sec)</span><br><span class="line">    Verify <span class="built_in">return</span> code: 0 (ok)</span><br><span class="line">---</span><br></pre></td></tr></table></figure></p>
+<p>最后一行输出为 <code>Verify return code: 0 (ok)</code> 即为测试通过。</p></li>
+<li><p>合并证书和私钥。服务端在使用时只需要一个文件，所以我们需要将 <code>cer.pem</code> 和 <code>key.pem</code> 合并成一个 <code>ck.pem</code> 文件： <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ cat cer.pem key.pem &gt; ck.pem</span><br></pre></td></tr></table></figure></p></li>
+</ol>
+
+  </section>
+
+</article>
+
+<section class="read-more">
+     
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">最近的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2017/06/09/appstore-download-path/" title="获取App Store下载的Xcode安装包">获取App Store下载的Xcode安装包</a></h2>
+                <p class="excerpt">
+                
+                通过 App Store 下载安装 Xcode 的时候可能会遇到各种奇葩的事情。
+这不，我刚才就摊上事了：用公司的渣网络辛辛苦苦下载两个多小时眼看开始安装了结果弹框提示我说空间不足无法继续安装。既然空间不足咱就清理一下呗，清理完了之后想要继续安装发现没有办法重新开始安装，App Store 里的按钮
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2017-06-09T03:49:58.000Z" class="post-list__meta--date date">2017/06/09</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/Mac技巧/">Mac技巧</a>
+
+</span><a class="btn-border-small" href="/2017/06/09/appstore-download-path/">继续阅读</a></div>
+
+            </div>
+        
+
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">更早的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2017/05/28/nested-scrollview-scrolling-conflit/" title="嵌套UIScrollView滑动手势冲突的解决">嵌套UIScrollView滑动手势冲突的解决</a></h2>
+                <p class="excerpt">
+                
+                问题
+最近有有朋友在Github上提出issue说 KSPhotoBrowser 在图片长度超出屏幕大小多时候没有办法通过拖拽返回。其实这个问题从我开始开发的时候就存在，感觉影响不是很大就一直拖着没解决。既然有人提出来了，那看来是必须得解决一下了。。。
+
+
+第一张图就是正常的拖拽返回，第二张有问题。
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2017-05-28T02:55:23.000Z" class="post-list__meta--date date">2017/05/28</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/iOS开发/">iOS开发</a>
+
+</span><a class="btn-border-small" href="/2017/05/28/nested-scrollview-scrolling-conflit/">继续阅读</a></div>
+
+            </div>
+        
+   
+</section>
+
+
+
+<section class="post-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'skx926'; // required: replace example with your forum shortname
+
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</section>
+
+
+
+
+            <footer class="footer">
+    <span class="footer__copyright">
+        本站点采用<a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>
+    </span>
+    <span class="footer__copyright">
+        基于 <a href="http://hexo.io">Hexo</a> 搭建，感谢 <a href="https://pages.github.com/">GitHub Pages</a> 提供免费的托管服务
+    </span>
+    <span class="footer__copyright">
+        &copy; 2020 - 本站由 <a href="/">Kyle Sun</a> 创建,
+        使用<a href="https://github.com/skx926/hexo-theme-vno">hexo-theme-vno</a>主题
+    </span>
+</footer>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="/js/main.js"></script>
+
+     
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-73055515-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>

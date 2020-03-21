@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    
+    <title>深入理解HTTPS | CODE &amp; ZEN</title>
+    <meta name="renderer" content="webkit">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta name="description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="深入理解HTTPS | CODE &amp; ZEN">
+    <meta name="twitter:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="深入理解HTTPS | CODE &amp; ZEN">
+    <meta property="og:description" content="我是孙凯旋 @skx926&lt;br&gt;一名来自中国的 iOS 开发者&lt;br&gt;写过 Android&lt;br&gt;也会点 Web&lt;br&gt;深知付出更多才能收获更多&lt;br&gt;唯有在技术的道路上勤勤恳恳&lt;br&gt;方得片刻安心">
+
+    
+    <meta name="author" content="Kyle Sun">
+    
+    <link rel="stylesheet" href="/css/vno.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+
+    
+    <link rel="icon" href="/images/favicon.jpg">
+    
+
+    
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+    
+    
+    <meta name="generator" content="hexo"/>
+    
+    <link rel="alternate" type="application/rss+xml" title="CODE &amp; ZEN" href="/atom.xml">
+    
+
+    <link rel="canonical" href="http://skx926.me/2017/12/05/https/"/>
+
+    
+    <link rel="author" href="https://plus.google.com/118328736821069549236"/>
+    
+    <!-- fancybox support -->
+    
+        <script src="/lib/jquery-3.3.1.min.js"></script>
+        <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.min.css">
+        <script src="/lib/fancybox/dist/jquery.fancybox.min.js"></script>
+        <script src="/js/wrapImage.js"></script>
+    
+</head>
+
+<body class="home-template no-js">
+
+    <span class="mobile btn-mobile-menu">
+        <i class="fa fa-list btn-mobile-menu__icon"></i>
+        <i class="fa fa-angle-up btn-mobile-close__icon hidden"></i>
+    </span>
+
+    
+<header class="panel-cover panel-cover--collapsed" style="background-image: url(/images/background-cover.jpg)">
+  <div class="panel-main">
+    <div class="panel-main__inner panel-inverted">
+    <div class="panel-main__content">
+
+        <a href="/" title="前往 CODE &amp; ZEN 的主页"><img src="/images/logo.jpg" width="80" alt="CODE &amp; ZEN logo" class="panel-cover__logo logo" /></a>
+        <h1 class="panel-cover__title panel-title"><a href="/" title="link to homepage for CODE &amp; ZEN">CODE &amp; ZEN</a></h1>
+        
+        <span class="panel-cover__subtitle panel-subtitle">凯旋的博客</span>
+        
+        <hr class="panel-cover__divider" />
+        <p class="panel-cover__description">我是孙凯旋 @skx926<br>一名来自中国的 iOS 开发者<br>写过 Android<br>也会点 Web<br>深知付出更多才能收获更多<br>唯有在技术的道路上勤勤恳恳<br>方得片刻安心</p>
+        <hr class="panel-cover__divider panel-cover__divider--secondary" />
+        
+        <div class="navigation-wrapper">
+          <div>
+          <nav class="cover-navigation cover-navigation--primary">
+            <ul class="navigation">
+              <li class="navigation__item"><a href="/#blog" title="访问博客" class="blog-button">文章</a></li>
+            
+              <li class="navigation__item"><a href="/archives">归档</a></li>
+            
+            </ul>
+          </nav>
+          </div>
+          <div>
+          <nav class="cover-navigation navigation--social">
+  <ul class="navigation">
+
+  <!-- Weibo-->
+  
+  <li class="navigation__item">
+    <a href="http://weibo.com/ikeson" title="我的微博" target="_blank">
+      <i class='social fa fa-weibo'></i>
+      <span class="label">Weibo</span>
+    </a>
+  </li>
+
+
+  <!-- Github -->
+  
+  <li class="navigation__item">
+    <a href="https://github.com/skx926" title="查看我的GitHub主页" target="_blank">
+      <i class='social fa fa-github'></i>
+      <span class="label">Github</span>
+    </a>
+  </li>
+
+
+<!-- Stack Overflow -->
+        
+
+  <!-- Google Plus -->
+  
+  <li class="navigation__item">
+    <a href="https://plus.google.com/118328736821069549236" title="Google+" target="_blank">
+      <i class='social fa fa-google-plus-square'></i>
+      <span class="label">Google+</span>
+    </a>
+  </li>
+
+
+<!-- Facebook -->
+
+
+<!-- Twitter -->
+
+  <li class="navigation__item">
+    <a href="https://twitter.com/skx926" title="上Twitter找我" target="_blank">
+      <i class='social fa fa-twitter'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+<!-- instagram -->
+
+  <li class="navigation__item">
+    <a href="https://www.instagram.com/skx926" title="上Instagram找我" target="_blank">
+      <i class='social fa fa-instagram'></i>
+      <span class="label">Twitter</span>
+    </a>
+  </li>
+
+
+  <li class="navigation__item">
+    <a href="/atom.xml" title="RSS" target="_blank">
+      <i class='social fa fa-rss'></i>
+      <span class="label">RSS</span>
+    </a>
+  </li>
+
+
+
+  </ul>
+</nav>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="panel-cover--overlay cover-disabled"></div>
+  </div>
+</header>
+
+
+    <div class="content-wrapper">
+        <div class="content-wrapper__inner">
+            <article class="post-container post-container--single">
+
+  <header class="post-header">
+    <div class="post-meta">
+      <time datetime="2017-12-05T14:18:12.000Z" class="post-list__meta--date date">2017/12/05</time>
+ &#8226; <span class="post-meta__tags tags">分类&nbsp;
+  <a class="tag-link" href="/tags/Web/">Web</a>
+
+</span>
+    </div>
+    <h1 class="post-title">深入理解HTTPS</h1>
+  </header>
+
+  <section class="post">
+    <h2 id="http为什么不安全">HTTP为什么不安全</h2>
+<p>HTTP协议传输的数据都是未经过加密处理的，也就是说客户端和服务端使用HTTP通信的中间环节都有可能会产生信息的泄漏。</p>
+<h2 id="如何让http更安全">如何让HTTP更安全</h2>
+<p>有人会说很简单，把数据加密一下不就行了。嗯，说起来很简单，但是具体怎么加密呢？</p>
+<h3 id="对称加密还是非对称加密">对称加密还是非对称加密？</h3>
+<p>我们现在有两种加密方式可以选择：对称加密和非对称加密。</p>
+<blockquote>
+<p>对称加密是最快速、最简单的一种加密方式，加密（encryption）与解密（decryption）用的是同样的密钥（secret key）,这种方法在密码学中叫做对称加密算法。</p>
+</blockquote>
+<blockquote>
+<p>非对称加密算法需要两个密钥：公开密钥（publickey）和私有密钥（privatekey）。公开密钥与私有密钥是一对，如果用公开密钥对数据进行加密，只有用对应的私有密钥才能解密；如果用私有密钥对数据进行加密，那么只有用对应的公开密钥才能解密。因为加密和解密使用的是两个不同的密钥，所以这种算法叫作非对称加密算法。</p>
+</blockquote>
+<p>如果我们采用对称加密的方式，那么就需要将对称密钥以明文的方式从一方传递到另一方，这样的话密钥很容易被窃取，这样的加密也形同虚设。</p>
+<p>如果我们使用非对称加密的方式，就需要将服务端的公钥在客户端发起请求之后传递给客户端，客户端使用服务端的公钥加密数据然后发送给服务端，服务端在接收到数据之后用自己的私钥进行解密就可以了。但是这样只是一个单向的加密。由于服务端的公钥是是公开的，任何一个人都可以获取，所以服务端用私钥加密后的数据是谁都可以解密的，所以也就不安全。</p>
+<p>为了解决这个问题，我们可以让客户端也生成一对非对称的密钥，在获取到服务端的公钥之后，用其将客户端的公钥加密发送给服务端，服务端后面的数据都通过客户端的公钥进行加密再传输，这样就安全了。</p>
+<p>但是这样的话又存在另外一个问题，就是效率问题。非对称加密的算法相对比较复杂，如果两端每次通信都使用非对称加密的进行加密的话，对通信的效率会有很大的影响。</p>
+<p>既然非对称加密的效率比较低，那么我们是否可以将对称加密和非对称加密进行结合呢？答案是肯定的。我们可以在客户端获取到服务端的公钥之后生成一对对称密钥，然后发送给服务端。服务端在接收到之后后续的通信双方都使用对称密钥进行加密就可以在提高安全性的同时提升加密的效率。</p>
+<h3 id="如何保证服务端不会被冒充">如何保证服务端不会被冒充</h3>
+<p>到上一步我们似乎已经完美解决HTTP的安全问题了，但是新的问题又来了。如果在我们第一步客户端给服务器发送请求的时候会话已经被劫持，第二步我们收到的公钥也是假的，那我们后续的加密不都是白费力气？那么如何保证我们通信的服务器就是我们想要的服务器呢？</p>
+<p>如果有两个人都说自己是小明，而你并不知道小明长什么样子，怎么判断谁是真正的小明呢？很简单，你可以要求他们亮出身份证，以此来确定谁是小明。同样的道理，两台服务器都说自己是google.com，我们可以要求每个服务器都去一个权威的机构（CA）申请一个唯一的身份证也就是数字证书，证书上写明自己的域名和公钥。这样客户端就可以通过他们的证书来判断谁是真正的google.com。</p>
+<blockquote>
+<p>数字证书颁发过程：用户首先产生自己的密钥对，并将公共密钥及部分个人身份信息传送给认证中心。认证中心在核实身份后，将执行一些必要的步骤，以确信请求确实由用户发送而来，然后，认证中心将发给用户一个数字证书，该证书内包含用户的个人信息和他的公钥信息，同时还附有认证中心的签名信息。用户就可以使用自己的数字证书进行相关的各种活动。数字证书由独立的证书发行机构发布。数字证书各不相同，每种证书可提供不同级别的可信度。可以从证书发行机构获得您自己的数字证书。</p>
+</blockquote>
+<h3 id="如何验证数字证书的真伪">如何验证数字证书的真伪</h3>
+<p>那么问题又来了，既然有了数字证书将服务器地址和公钥绑定在了一起。那么又如何证明这个数字书是真的呢？</p>
+<p>颁发数字证书的时候，CA将你提交的服务端身份信息和公钥写在证书上，然后使用一定的哈希算法从证书计算出一个摘要值，然后使用他们的私钥来对这个摘要值进行加密，然后添加到证书上。这段加密后的数据就叫做数字签名。</p>
+<p>CA的公钥已经事先保存在了客户端所在的操作系统当中，所以当客户端收到服务端的数字证书之后就可以使用CA的公钥解密得到摘要值，然后通过同样的哈希算法对证书内容计算出一个摘要值并和解密得到的摘要值进行比对，如果完全相同则证明这个服务器就是我们想要通信的。之后就可以开心的进行握手的后续步骤了。</p>
+<p>我们前面推演出的这个加密的过程其实就是HTTPS的工作过程。</p>
+<h2 id="什么是https">什么是HTTPS</h2>
+<p>HTTPS全称是Hyper Text Transfer Protocol over Secure Socket Layer，顾名思义就是在HTTP的下面在加上一层SSL/TSL层以保证数据传输的安全性。</p>
+<h2 id="什么是ssltsl">什么是SSL/TSL</h2>
+<p>SSL(Secure Sockets Layer 安全套接层),及其继任者传输层安全（Transport Layer Security，TLS）是为网络通信提供安全及数据完整性的一种安全协议。TLS与SSL在传输层对网络连接进行加密。</p>
+<h2 id="ssltsl握手过程">SSL/TSL握手过程</h2>
+<p>关于SSL/TSL握手过程，这里有一篇阮一峰老师的文章已经讲解的很详细了：<a href="http://www.ruanyifeng.com/blog/2014/09/illustration-ssl.html" target="_blank" rel="noopener">图解SSL/TLS协议</a>，跟我们前面最终讨论出的结果相差无几，具体的过程这里就不多废话了。</p>
+<h2 id="中间人攻击和https调试">中间人攻击和HTTPS调试</h2>
+<p>有人可能觉得HTTPS已经很安全了，即便有中间人他也只能干瞪眼，啥坏事也干不了。如果这样认为那你就大错特错了！</p>
+<p>试想你不经意间安装了一个含有攻击者公钥的的根证书，然后在客户端和服务端握手阶段服务端发送的证书被攻击者截获，攻击者伪造一个身份信息和服务端证书相同但是替换成它的公钥的证书并用它的私钥进行签名。客户端在收到攻击者的证书之后由于系统中存在包含有攻击者的公钥的证书，所以可以成功的验证和解密收到的证书，然后客户端使用攻击者的公钥加密对称密钥发送给服务端时又被攻击者截获，这时攻击者使用自己的私钥解密获得对称密钥，然后再用服务端的公钥进行加密再发送给服务端。这样就在神不知鬼不觉中成功窃取了信息。</p>
+<p>所以为了安全，我们在手机和电脑上安装证书时就要非常谨慎，防止重要信息被窃取。</p>
+<p>但是同时这也给我们提供了一种HTTPS调试的思路：我们在调试接口时可能会需要查看HTTPS的报文真实内容，这对于HTTP来说很简单，直接用WireShark、Charles这类软件进行抓包就可以了。但是对于HTTPS就只能干着急，这时候我们就可以通过OpenSSL生成一个自签名的证安装在客户端来对HTTPS请求的内容进行查看。</p>
+<h2 id="利用ssl-pinning提高应用安全性">利用SSL Pinning提高应用安全性</h2>
+<p>从上面我们知道HTTPS虽然已经足够安全，但还是存在中间人攻击的风险。SSL Pinning应运而生，SSL Pinning可以理解为证书绑定，也就是客户端事先内置一份服务端的证书，在通信的时候就把它和服务端发过来的证书进行比对，如果两个证书有任何的不同，就可以判定受到中间人攻击，马上可以中断请求。这样中间人就无法成功进行攻击了。</p>
+<p>SSL Pinning虽然可以很好的解决中间人攻击问题，但是由于客户端要事先内置服务端的证书，所以只适用于客户端事先知道要请求的服务器的地址和证书的情况，比如iOS和Android应用与服务器之间的通信。像浏览器这种可以随意输入服务器的地址的场景SSL Pinning就无能为力了。</p>
+<h2 id="不同浏览器预装证书的差异">不同浏览器预装证书的差异</h2>
+<p>前段时间刚安装了新版的Firefox，打开别的网站速度都很快，但就是死活打不开google.com，会报证书不安全的错误，但同时使用Safari和Chrome都可以正常打开google.com。后来才发现是我在我是用的代理软件中开启了对google.com的https抓包（也就是是用中间人攻击的方式），把它关掉之后Firefox就可以正常访问google.com了，But why？直到我看到了知乎上的一个回答中的一句话之后才茅塞顿开：</p>
+<blockquote>
+<p><a href="https://www.zhihu.com/question/37370216/answer/74060132" target="_blank" rel="noopener">证书是需要预装的，特别是根证书。IE和Chrome是通过内置在Windows系统中的TrustStore来管理根证书（当然自己也可以手动导入自签证书，浏览不会认可的因为有OCSP和CRL--之后细讲）；而Firefox则是内置在自己的浏览中。</a></p>
+</blockquote>
+<p>由于Firefox的所信任的根证书都内置在浏览器当中，并不会使用系统中的根证书，而我们自签名的证书只能安装在系统中，所以Firefox无法在内置的根证书中找到可以用来解密我们已经修改过的服务端证书，所以就会报错了。</p>
+
+  </section>
+
+</article>
+
+<section class="read-more">
+     
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">最近的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2018/05/30/audio-and-video-1/" title="iOS音视频的那些事儿（一）：数据的采集和编码">iOS音视频的那些事儿（一）：数据的采集和编码</a></h2>
+                <p class="excerpt">
+                
+                AVFoundation简介
+AVFoundation是苹果在iOS和OS X系统中用于处理基于时间的媒体数据的Objective-C框架. 供使用者来开发媒体类型的应用程序。
+
+如果只是进行简单的视频录制，使用UIKit中的UIImagePickerController就可以了；如果需要播放视频，
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2018-05-30T02:30:07.000Z" class="post-list__meta--date date">2018/05/30</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/iOS/">iOS</a>
+
+</span><a class="btn-border-small" href="/2018/05/30/audio-and-video-1/">继续阅读</a></div>
+
+            </div>
+        
+
+        
+            <div class="read-more-item">
+                <span class="read-more-item-dim">更早的文章</span>
+                <h2 class="post-list__post-title post-title"><a href="/2017/11/30/understanding-of-ssh/" title="SSH协议工作过程">SSH协议工作过程</a></h2>
+                <p class="excerpt">
+                
+                说到SSH，我们很多人都用过，比如我们通过git提交代码到Github的时候需要先添加本机的public key到Github网站，使用SSH远程连接VPS来对服务器进行操作。但是SSH究竟是什么，它是如何工作的呢？
+定义
+SSH全称Secure Shell，是一个提供数据通信安全、远程登录、远程指
+                &hellip;
+                </p>
+                <div class="post-list__meta"><time datetime="2017-11-29T16:29:40.000Z" class="post-list__meta--date date">2017/11/30</time>
+ &#8226; <span class="post-list__meta--tags tags">于&nbsp;
+  <a class="tag-link" href="/tags/Web/">Web</a>
+
+</span><a class="btn-border-small" href="/2017/11/30/understanding-of-ssh/">继续阅读</a></div>
+
+            </div>
+        
+   
+</section>
+
+
+
+<section class="post-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'skx926'; // required: replace example with your forum shortname
+
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+      })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</section>
+
+
+
+
+            <footer class="footer">
+    <span class="footer__copyright">
+        本站点采用<a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>
+    </span>
+    <span class="footer__copyright">
+        基于 <a href="http://hexo.io">Hexo</a> 搭建，感谢 <a href="https://pages.github.com/">GitHub Pages</a> 提供免费的托管服务
+    </span>
+    <span class="footer__copyright">
+        &copy; 2020 - 本站由 <a href="/">Kyle Sun</a> 创建,
+        使用<a href="https://github.com/skx926/hexo-theme-vno">hexo-theme-vno</a>主题
+    </span>
+</footer>
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="/js/main.js"></script>
+
+     
+<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-73055515-1', 'auto');
+	ga('send', 'pageview');
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>
