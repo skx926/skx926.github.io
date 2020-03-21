@@ -334,7 +334,7 @@
     <published>2019-01-23T03:31:53.000Z</published>
     <updated>2020-03-21T04:26:05.434Z</updated>
     
-    <content type="html"><![CDATA[<p>在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇<a href="http://skx926.github.io/2016/02/04/shadowsocks-server/" target="_blank" rel="noopener">文章</a>来教大家搭建自己的翻墙服务器，里面关于VPS推荐的部分已经过时了，但是操作步骤还是有用的。</p>
+    <content type="html"><![CDATA[<p>在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇<a href="http://skx926.github.io/2016/02/04/shadowsocks-server/">文章</a>来教大家搭建自己的翻墙服务器，里面关于VPS推荐的部分已经过时了，但是操作步骤还是有用的。</p>
 <p>但是等你把一切都配置好之后你会发现似乎只有浏览器可以正常访问被屏蔽的网站，常用的一些服务比如git、ssh、npm、terminal、telegram等不是连接出错就是慢的要死，其实这些服务的数据其实根本没有经过我们的代理服务器，所以还是和原来一样。这是为什么呢？</p>
 <p>当我们启动了Shadowsocks客户端的时候，就设置了几个系统级别的环境变量比如<code>http_proxy</code>，浏览器在发送http请求的时候就会去检测这个环境变量是否存在，如果存在就会把请求数据包通过代理地址发送给本地的代理服务器，本地的代理服务器再把数据包发送给远程的代理服务器，然后再转发给真正的目的服务器。如下图所示：</p>
 <img src="/2019/01/23/mac-proxy/flow.png">
@@ -345,7 +345,7 @@
 <p>我们可以看到socks5的地址和端口是<code>socks5://127.0.0.1:1086</code>。同样的，在HTTP选项可以看到HTTP代理地址和端口是<code>http://127.0.0.1:1087</code></p>
 <h2 id="设置代理">设置代理</h2>
 <h3 id="git">Git</h3>
-<p>其实给git设置代理的方法我之前已经写过一篇<a href="http://skx926.github.io/2017/01/15/git-proxy/" target="_blank" rel="noopener">文章</a>了，这里再说一下。</p>
+<p>其实给git设置代理的方法我之前已经写过一篇<a href="http://skx926.github.io/2017/01/15/git-proxy/">文章</a>了，这里再说一下。</p>
 <p>设置http代理</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git config --global http.proxy socks5://127.0.0.1:1086</span><br></pre></td></tr></table></figure>
 <p>取消代理设置</p>
@@ -393,7 +393,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇&lt;a href=&quot;http://skx926.github.io/2016/02/04/shadowsocks-server/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;文章&lt;/
+      &lt;p&gt;在天朝要做一名合格的程序员，翻墙上Google是必备技能。我之前有写过一篇&lt;a href=&quot;http://skx926.github.io/2016/02/04/shadowsocks-server/&quot;&gt;文章&lt;/a&gt;来教大家搭建自己的翻墙服务器，里面关于VPS推荐的部分已经
     
     </summary>
     
