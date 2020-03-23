@@ -6570,7 +6570,9 @@ i {
   border-top: 1px solid #ddd;
 }
 .archive-list__year {
-  font-size: 1.5em;
+  font-weight: bold;
+  font-size: 1.3em;
+  color: #4e97d8;
 }
 .archive-list {
   margin: 10px 0 40px 0;
@@ -6580,11 +6582,12 @@ i {
 }
 .archive-list__date-wrap {
   float: left;
-  margin-top: 0.45em;
+  font-size: 1em;
+  margin-top: 0.15em;
   width: 125px;
 }
 .archive-list__date {
-  color: #7f8c8d;
+  color: #aaa;
 }
 .archive-list__title-wrap {
   margin-left: 125px;
@@ -6593,8 +6596,8 @@ i {
   font-family: "ff-tisa-web-pro-1", "ff-tisa-web-pro-2", "Lucida Grande", "Hiragino Sans GB", "Hiragino Sans GB W3", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
   margin-top: 0;
   color: #333;
-  font-size: 1.3em;
-  line-height: 1.5em;
+  font-size: 1.2em;
+  line-height: 1em;
 }
 *:focus {
   outline: none;
