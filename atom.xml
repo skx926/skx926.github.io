@@ -4,9 +4,9 @@
   <subtitle>不忘初心 方得始终</subtitle>
   <link href="/atom.xml" rel="self"/>
   
-  <link href="http://skx926.github.io/"/>
+  <link href="https://skx926.github.io/"/>
   <updated>2020-03-21T04:26:05.525Z</updated>
-  <id>http://skx926.github.io/</id>
+  <id>https://skx926.github.io/</id>
   
   <author>
     <name>Kyle Sun</name>
@@ -17,8 +17,8 @@
   
   <entry>
     <title>SDK开发和打包静态库遇到的坑</title>
-    <link href="http://skx926.github.io/2019/03/13/sdk-development/"/>
-    <id>http://skx926.github.io/2019/03/13/sdk-development/</id>
+    <link href="https://skx926.github.io/2019/03/13/sdk-development/"/>
+    <id>https://skx926.github.io/2019/03/13/sdk-development/</id>
     <published>2019-03-13T06:27:34.000Z</published>
     <updated>2020-03-21T04:26:05.525Z</updated>
     
@@ -152,14 +152,14 @@
     </summary>
     
     
-      <category term="iOS" scheme="http://skx926.github.io/tags/iOS/"/>
+      <category term="iOS" scheme="https://skx926.github.io/tags/iOS/"/>
     
   </entry>
   
   <entry>
     <title>OpenGL学习笔记（三）：向量、矩阵和变换</title>
-    <link href="http://skx926.github.io/2019/03/07/opengl-transform/"/>
-    <id>http://skx926.github.io/2019/03/07/opengl-transform/</id>
+    <link href="https://skx926.github.io/2019/03/07/opengl-transform/"/>
+    <id>https://skx926.github.io/2019/03/07/opengl-transform/</id>
     <published>2019-03-07T03:38:21.000Z</published>
     <updated>2020-03-21T04:26:05.499Z</updated>
     
@@ -323,14 +323,14 @@
     </summary>
     
     
-      <category term="Graphic" scheme="http://skx926.github.io/tags/Graphic/"/>
+      <category term="Graphic" scheme="https://skx926.github.io/tags/Graphic/"/>
     
   </entry>
   
   <entry>
     <title>Mac上的各种代理设置</title>
-    <link href="http://skx926.github.io/2019/01/23/mac-proxy/"/>
-    <id>http://skx926.github.io/2019/01/23/mac-proxy/</id>
+    <link href="https://skx926.github.io/2019/01/23/mac-proxy/"/>
+    <id>https://skx926.github.io/2019/01/23/mac-proxy/</id>
     <published>2019-01-23T03:31:53.000Z</published>
     <updated>2020-03-21T04:26:05.434Z</updated>
     
@@ -398,14 +398,14 @@
     </summary>
     
     
-      <category term="macOS" scheme="http://skx926.github.io/tags/macOS/"/>
+      <category term="macOS" scheme="https://skx926.github.io/tags/macOS/"/>
     
   </entry>
   
   <entry>
     <title>移动端H5页面选择图片的各种姿势</title>
-    <link href="http://skx926.github.io/2018/12/28/h5-image-picker/"/>
-    <id>http://skx926.github.io/2018/12/28/h5-image-picker/</id>
+    <link href="https://skx926.github.io/2018/12/28/h5-image-picker/"/>
+    <id>https://skx926.github.io/2018/12/28/h5-image-picker/</id>
     <published>2018-12-28T09:05:50.000Z</published>
     <updated>2020-03-21T04:26:05.432Z</updated>
     
@@ -477,14 +477,14 @@
     </summary>
     
     
-      <category term="iOS" scheme="http://skx926.github.io/tags/iOS/"/>
+      <category term="iOS" scheme="https://skx926.github.io/tags/iOS/"/>
     
   </entry>
   
   <entry>
     <title>删除macOS自带的英文输入法</title>
-    <link href="http://skx926.github.io/2018/10/19/remove-default-input-source/"/>
-    <id>http://skx926.github.io/2018/10/19/remove-default-input-source/</id>
+    <link href="https://skx926.github.io/2018/10/19/remove-default-input-source/"/>
+    <id>https://skx926.github.io/2018/10/19/remove-default-input-source/</id>
     <published>2018-10-19T06:22:25.000Z</published>
     <updated>2020-03-21T04:26:05.517Z</updated>
     
@@ -519,14 +519,14 @@
     </summary>
     
     
-      <category term="macOS" scheme="http://skx926.github.io/tags/macOS/"/>
+      <category term="macOS" scheme="https://skx926.github.io/tags/macOS/"/>
     
   </entry>
   
   <entry>
     <title>OpenGL学习笔记（一）：在Mac上编译GLFW并配置到Xcode项目</title>
-    <link href="http://skx926.github.io/2018/09/05/mac-glfw/"/>
-    <id>http://skx926.github.io/2018/09/05/mac-glfw/</id>
+    <link href="https://skx926.github.io/2018/09/05/mac-glfw/"/>
+    <id>https://skx926.github.io/2018/09/05/mac-glfw/</id>
     <published>2018-09-05T03:58:11.000Z</published>
     <updated>2020-03-21T04:26:05.434Z</updated>
     
@@ -566,14 +566,14 @@
     </summary>
     
     
-      <category term="Graphic" scheme="http://skx926.github.io/tags/Graphic/"/>
+      <category term="Graphic" scheme="https://skx926.github.io/tags/Graphic/"/>
     
   </entry>
   
   <entry>
     <title>隐藏在4K电视中的猫腻</title>
-    <link href="http://skx926.github.io/2018/06/25/real-vs-fake-4k-tv/"/>
-    <id>http://skx926.github.io/2018/06/25/real-vs-fake-4k-tv/</id>
+    <link href="https://skx926.github.io/2018/06/25/real-vs-fake-4k-tv/"/>
+    <id>https://skx926.github.io/2018/06/25/real-vs-fake-4k-tv/</id>
     <published>2018-06-25T01:49:39.000Z</published>
     <updated>2020-03-21T04:26:05.503Z</updated>
     
@@ -676,14 +676,14 @@
     </summary>
     
     
-      <category term="生活" scheme="http://skx926.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+      <category term="生活" scheme="https://skx926.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
     
   </entry>
   
   <entry>
     <title>iOS音视频的那些事儿（一）：数据的采集和编码</title>
-    <link href="http://skx926.github.io/2018/05/30/audio-and-video-1/"/>
-    <id>http://skx926.github.io/2018/05/30/audio-and-video-1/</id>
+    <link href="https://skx926.github.io/2018/05/30/audio-and-video-1/"/>
+    <id>https://skx926.github.io/2018/05/30/audio-and-video-1/</id>
     <published>2018-05-30T02:30:07.000Z</published>
     <updated>2020-03-21T04:26:05.418Z</updated>
     
@@ -816,14 +816,14 @@
     </summary>
     
     
-      <category term="iOS" scheme="http://skx926.github.io/tags/iOS/"/>
+      <category term="iOS" scheme="https://skx926.github.io/tags/iOS/"/>
     
   </entry>
   
   <entry>
     <title>深入理解HTTPS</title>
-    <link href="http://skx926.github.io/2017/12/05/https/"/>
-    <id>http://skx926.github.io/2017/12/05/https/</id>
+    <link href="https://skx926.github.io/2017/12/05/https/"/>
+    <id>https://skx926.github.io/2017/12/05/https/</id>
     <published>2017-12-05T14:18:12.000Z</published>
     <updated>2020-03-21T04:26:05.434Z</updated>
     
@@ -887,14 +887,14 @@
     </summary>
     
     
-      <category term="Web" scheme="http://skx926.github.io/tags/Web/"/>
+      <category term="Web" scheme="https://skx926.github.io/tags/Web/"/>
     
   </entry>
   
   <entry>
     <title>SSH协议工作过程</title>
-    <link href="http://skx926.github.io/2017/11/30/understanding-of-ssh/"/>
-    <id>http://skx926.github.io/2017/11/30/understanding-of-ssh/</id>
+    <link href="https://skx926.github.io/2017/11/30/understanding-of-ssh/"/>
+    <id>https://skx926.github.io/2017/11/30/understanding-of-ssh/</id>
     <published>2017-11-29T16:29:40.000Z</published>
     <updated>2020-03-21T04:26:05.537Z</updated>
     
@@ -946,14 +946,14 @@
     </summary>
     
     
-      <category term="Web" scheme="http://skx926.github.io/tags/Web/"/>
+      <category term="Web" scheme="https://skx926.github.io/tags/Web/"/>
     
   </entry>
   
   <entry>
     <title>解决Storyboard中设置的颜色和代码设置的颜色不一样的问题</title>
-    <link href="http://skx926.github.io/2017/06/29/xcode-device-rgb/"/>
-    <id>http://skx926.github.io/2017/06/29/xcode-device-rgb/</id>
+    <link href="https://skx926.github.io/2017/06/29/xcode-device-rgb/"/>
+    <id>https://skx926.github.io/2017/06/29/xcode-device-rgb/</id>
     <published>2017-06-29T06:15:35.000Z</published>
     <updated>2020-03-21T04:26:05.544Z</updated>
     
@@ -973,14 +973,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>利用Pinch和Pan手势实现UIView的缩放和拖拽</title>
-    <link href="http://skx926.github.io/2017/06/21/custom-scalable-view/"/>
-    <id>http://skx926.github.io/2017/06/21/custom-scalable-view/</id>
+    <link href="https://skx926.github.io/2017/06/21/custom-scalable-view/"/>
+    <id>https://skx926.github.io/2017/06/21/custom-scalable-view/</id>
     <published>2017-06-21T06:25:01.000Z</published>
     <updated>2020-03-21T04:26:05.431Z</updated>
     
@@ -1015,14 +1015,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>获取App Store下载的Xcode安装包</title>
-    <link href="http://skx926.github.io/2017/06/09/appstore-download-path/"/>
-    <id>http://skx926.github.io/2017/06/09/appstore-download-path/</id>
+    <link href="https://skx926.github.io/2017/06/09/appstore-download-path/"/>
+    <id>https://skx926.github.io/2017/06/09/appstore-download-path/</id>
     <published>2017-06-09T03:49:58.000Z</published>
     <updated>2020-03-21T04:26:05.415Z</updated>
     
@@ -1044,14 +1044,14 @@
     </summary>
     
     
-      <category term="Mac技巧" scheme="http://skx926.github.io/tags/Mac%E6%8A%80%E5%B7%A7/"/>
+      <category term="Mac技巧" scheme="https://skx926.github.io/tags/Mac%E6%8A%80%E5%B7%A7/"/>
     
   </entry>
   
   <entry>
     <title>制作服务端推送时使用的.pem证书</title>
-    <link href="http://skx926.github.io/2017/06/01/apns-certificates/"/>
-    <id>http://skx926.github.io/2017/06/01/apns-certificates/</id>
+    <link href="https://skx926.github.io/2017/06/01/apns-certificates/"/>
+    <id>https://skx926.github.io/2017/06/01/apns-certificates/</id>
     <published>2017-06-01T09:45:41.000Z</published>
     <updated>2020-03-21T04:26:05.415Z</updated>
     
@@ -1077,14 +1077,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>嵌套UIScrollView滑动手势冲突的解决</title>
-    <link href="http://skx926.github.io/2017/05/28/nested-scrollview-scrolling-conflit/"/>
-    <id>http://skx926.github.io/2017/05/28/nested-scrollview-scrolling-conflit/</id>
+    <link href="https://skx926.github.io/2017/05/28/nested-scrollview-scrolling-conflit/"/>
+    <id>https://skx926.github.io/2017/05/28/nested-scrollview-scrolling-conflit/</id>
     <published>2017-05-28T02:55:23.000Z</published>
     <updated>2020-03-21T04:26:05.456Z</updated>
     
@@ -1117,14 +1117,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>Xcode多Target下本地化App名称</title>
-    <link href="http://skx926.github.io/2017/05/25/multi-target-localization/"/>
-    <id>http://skx926.github.io/2017/05/25/multi-target-localization/</id>
+    <link href="https://skx926.github.io/2017/05/25/multi-target-localization/"/>
+    <id>https://skx926.github.io/2017/05/25/multi-target-localization/</id>
     <published>2017-05-25T04:43:00.000Z</published>
     <updated>2020-03-21T04:26:05.446Z</updated>
     
@@ -1167,14 +1167,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>检测iOS设备是否连接VPN</title>
-    <link href="http://skx926.github.io/2017/05/24/check-vpn-connectivity/"/>
-    <id>http://skx926.github.io/2017/05/24/check-vpn-connectivity/</id>
+    <link href="https://skx926.github.io/2017/05/24/check-vpn-connectivity/"/>
+    <id>https://skx926.github.io/2017/05/24/check-vpn-connectivity/</id>
     <published>2017-05-24T05:42:39.000Z</published>
     <updated>2020-03-21T04:26:05.428Z</updated>
     
@@ -1201,14 +1201,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>让Mac终端自动补全忽略大小写</title>
-    <link href="http://skx926.github.io/2017/05/20/terminal-autocomplete/"/>
-    <id>http://skx926.github.io/2017/05/20/terminal-autocomplete/</id>
+    <link href="https://skx926.github.io/2017/05/20/terminal-autocomplete/"/>
+    <id>https://skx926.github.io/2017/05/20/terminal-autocomplete/</id>
     <published>2017-05-20T03:55:33.000Z</published>
     <updated>2020-03-21T04:26:05.537Z</updated>
     
@@ -1227,14 +1227,14 @@
     </summary>
     
     
-      <category term="Mac技巧" scheme="http://skx926.github.io/tags/Mac%E6%8A%80%E5%B7%A7/"/>
+      <category term="Mac技巧" scheme="https://skx926.github.io/tags/Mac%E6%8A%80%E5%B7%A7/"/>
     
   </entry>
   
   <entry>
     <title>使用Trunk发布开源库到Cocoapods</title>
-    <link href="http://skx926.github.io/2017/05/16/publish-to-cocoapods/"/>
-    <id>http://skx926.github.io/2017/05/16/publish-to-cocoapods/</id>
+    <link href="https://skx926.github.io/2017/05/16/publish-to-cocoapods/"/>
+    <id>https://skx926.github.io/2017/05/16/publish-to-cocoapods/</id>
     <published>2017-05-16T08:49:20.000Z</published>
     <updated>2020-03-21T04:26:05.503Z</updated>
     
@@ -1269,14 +1269,14 @@
     </summary>
     
     
-      <category term="iOS开发" scheme="http://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
+      <category term="iOS开发" scheme="https://skx926.github.io/tags/iOS%E5%BC%80%E5%8F%91/"/>
     
   </entry>
   
   <entry>
     <title>让你的Mac终端“漂亮”起来</title>
-    <link href="http://skx926.github.io/2017/03/12/colorful-terminal/"/>
-    <id>http://skx926.github.io/2017/03/12/colorful-terminal/</id>
+    <link href="https://skx926.github.io/2017/03/12/colorful-terminal/"/>
+    <id>https://skx926.github.io/2017/03/12/colorful-terminal/</id>
     <published>2017-03-12T14:47:33.000Z</published>
     <updated>2020-03-21T04:26:05.428Z</updated>
     
@@ -1302,7 +1302,7 @@
     </summary>
     
     
-      <category term="Mac技巧" scheme="http://skx926.github.io/tags/Mac%E6%8A%80%E5%B7%A7/"/>
+      <category term="Mac技巧" scheme="https://skx926.github.io/tags/Mac%E6%8A%80%E5%B7%A7/"/>
     
   </entry>
   
