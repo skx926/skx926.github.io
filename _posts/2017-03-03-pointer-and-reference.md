@@ -1,7 +1,8 @@
 ---
 title: 从指针说起
 date: 2017-03-03 15:04:26
-tags: iOS开发
+tags: [指针, 引用]
+categories: [iOS]
 ---
 
 ### 指针

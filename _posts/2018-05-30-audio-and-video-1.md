@@ -1,7 +1,8 @@
 ---
 title: iOS音视频的那些事儿（一）：数据的采集和编码
 date: 2018-05-30 10:30:07
-tags: iOS
+tags: [AVFoundation, 音视频, YUV, H.265, PCM]
+categories: [iOS]
 ---
 
 ## AVFoundation简介

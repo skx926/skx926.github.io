@@ -1,8 +1,8 @@
 ---
 title: SSH协议工作过程
-draft: true
 date: 2017-11-30 00:29:40
-tags: Web
+tags: [SSH, TCP, 密钥]
+categories: [Mac]
 ---
 
 说到SSH，我们很多人都用过，比如我们通过git提交代码到Github的时候需要先添加本机的public key到Github网站，使用SSH远程连接VPS来对服务器进行操作。但是SSH究竟是什么，它是如何工作的呢？

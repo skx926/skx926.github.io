@@ -1,7 +1,8 @@
 ---
 title: 利用Pinch和Pan手势实现UIView的缩放和拖拽
 date: 2017-06-21 14:25:01
-tags: iOS开发
+tags: [手势]
+categories: [iOS]
 ---
 
 先来看下我们要实现的效果：

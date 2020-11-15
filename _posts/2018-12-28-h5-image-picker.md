@@ -1,7 +1,8 @@
 ---
 title: 移动端H5页面选择图片的各种姿势
 date: 2018-12-28 17:05:50
-tags: iOS
+tags: [H5, Hybrid, NSURLProtocol]
+categories: [iOS]
 ---
 
 ## 通过HTML的`<input>`标签调用系统api进行选择

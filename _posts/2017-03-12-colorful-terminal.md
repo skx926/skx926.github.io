@@ -1,7 +1,8 @@
 ---
 title: 让你的Mac终端“漂亮”起来
 date: 2017-03-12 22:47:33
-tags: Mac技巧
+tags: [终端, Vim]
+categories: [Mac]
 ---
 
 Mac自带的终端默认的配色看起来有些单调，如何让它变的“漂亮”一些呢？这里我们以`Tomorrow`配色方案为例来进行设置。

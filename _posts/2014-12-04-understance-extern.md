@@ -1,7 +1,8 @@
 ---
 title: 对extern的理解
 date: 2014-12-04 01:46:00           
-tags: iOS开发
+tags: [Extern]
+categories: [iOS]
 ---
 
 很少用到extern这个关键字，对它的了解也只停留在大学课堂那一点印象：外部变量，与局部变量相对。

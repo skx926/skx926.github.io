@@ -1,7 +1,8 @@
 ---
 title: 嵌套UIScrollView滑动手势冲突的解决
 date: 2017-05-28 10:55:23
-tags: iOS开发
+tags: [UIScrollView, 手势]
+categories: [iOS]
 ---
 
 ## 问题

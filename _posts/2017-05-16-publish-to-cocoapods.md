@@ -1,7 +1,8 @@
 ---
 title: 使用Trunk发布开源库到Cocoapods
 date: 2017-05-16 16:49:20
-tags: iOS开发
+tags: [Cocoapods, Trunk]
+categories: [iOS]
 ---
 
 ### 注册

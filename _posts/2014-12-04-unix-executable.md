@@ -1,7 +1,8 @@
 ---
 title: Mac如何生成Unix可执行文件
 date: 2014-12-04 02:00:00           
-tags: Mac技巧
+tags: [Unix]
+categories: [Mac]
 ---
 
 Yosemite升级10.10.2 prerelease 版本之后蛋疼的事情发生了，safari打不开github不说，就连google chrome也一打开就崩溃，升级到40的dev版本依旧崩溃，网上找了找，遇到同样问题的还挺多，有人已经提供了临时的解决办法

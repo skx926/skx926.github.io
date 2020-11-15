@@ -1,7 +1,8 @@
 ---
 title: Xcode多Target下本地化App名称
 date: 2017-05-25 12:43:00
-tags: iOS开发
+tags: [本地化]
+Categories: [iOS]
 ---
 
 ## Target

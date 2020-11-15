@@ -1,7 +1,8 @@
 ---
 title: 让Mac终端自动补全忽略大小写
 date: 2017-05-20 11:55:33
-tags: Mac技巧
+tags: [Mac, 终端]
+categories: [Mac]
 ---
 
 Mac自带的 `Terminal.app` 已经有自动补全功能，但是需要区分大小写。只需要在用户目录下修改 `.inputrc` 文件的配置就可以让它忽略大小写。具体操作如下：

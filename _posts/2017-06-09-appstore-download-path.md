@@ -1,7 +1,8 @@
 ---
 title: 获取App Store下载的Xcode安装包
 date: 2017-06-09 11:49:58
-tags: Mac技巧
+tags: [App Store, Xcode]
+categories: [Mac]
 ---
 
 通过 App Store 下载安装 Xcode 的时候可能会遇到各种奇葩的事情。

@@ -1,7 +1,8 @@
 ---
 title: 解决Storyboard中设置的颜色和代码设置的颜色不一样的问题
 date: 2017-06-29 14:15:35
-tags: iOS开发
+tags: [Storyboard, Device RGB]
+categories: [iOS]
 ---
 
 最近发现在Storyboard中设置的颜色和用代码设置的颜色居然不一样，当时我就震惊了！

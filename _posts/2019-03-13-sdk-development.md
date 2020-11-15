@@ -1,7 +1,8 @@
 ---
 title: SDK开发和打包静态库遇到的坑
 date: 2019-03-13 14:27:34
-tags: iOS
+tags: [SDK, CocoaPods Packager, 静态库]
+categories: [iOS]
 ---
 
 我们在使用第三方库的时候一般有三种接入方式：

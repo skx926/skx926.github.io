@@ -1,7 +1,8 @@
 ---
 title: 检测iOS设备是否连接VPN
 date: 2017-05-24 13:42:39
-tags: iOS开发
+tags: [VPN]
+categories: [iOS]
 ---
 
 ## 前言（废话）

@@ -1,7 +1,8 @@
 ---
 title: OpenGL学习笔记（三）：向量、矩阵和变换
 date: 2019-03-07 11:38:21
-tags: Graphic
+tags: [OpenGL, 向量, 矩阵, 变换]
+categories: [Graphic]
 math: true
 ---
 

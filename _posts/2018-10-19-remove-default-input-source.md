@@ -1,7 +1,8 @@
 ---
 title: 删除macOS自带的英文输入法
 date: 2018-10-19 14:22:25
-tags: macOS
+tags: [输入法]
+categories: [Mac]
 ---
 
 macOS自带的输入法支持的语言很多，但是词库不够丰富，所以我们一般都会安装搜狗输入法。
