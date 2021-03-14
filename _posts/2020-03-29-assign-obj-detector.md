@@ -23,7 +23,7 @@ categories: [iOS]
 
 ### 实现
 
-1. 我们先获取到可执行文件中的所有类
+我们先获取到可执行文件中的所有类
 
 ```objc
 #import <objc/runtime.h>
@@ -58,7 +58,7 @@ categories: [iOS]
 }
 ```
 
-2. 然后遍历每个类的每个属性
+然后遍历每个类的每个属性
 
 ```objc
 #import "JXAssignDetector.h"
