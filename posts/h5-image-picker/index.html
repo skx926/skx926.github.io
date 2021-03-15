@@ -1,0 +1,203 @@
+<!DOCTYPE html><html lang="en" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="theme" content="Chirpy v2.5.1"><meta name="generator" content="Jekyll v4.2.0" /><meta property="og:title" content="移动端H5页面选择图片的各种姿势" /><meta name="author" content="Kyle Sun" /><meta property="og:locale" content="en_US" /><meta name="description" content="通过HTML的&lt;input&gt;标签调用系统api进行选择" /><meta property="og:description" content="通过HTML的&lt;input&gt;标签调用系统api进行选择" /><link rel="canonical" href="https://xdev.in/posts/h5-image-picker/" /><meta property="og:url" content="https://xdev.in/posts/h5-image-picker/" /><meta property="og:site_name" content="一剑霜寒十四州" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2018-12-29T01:05:50+08:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="移动端H5页面选择图片的各种姿势" /><meta name="twitter:site" content="@skx926" /><meta name="twitter:creator" content="@Kyle Sun" /><meta name="google-site-verification" content="google_meta_tag_verification" /> <script type="application/ld+json"> {"description":"通过HTML的&lt;input&gt;标签调用系统api进行选择","mainEntityOfPage":{"@type":"WebPage","@id":"https://xdev.in/posts/h5-image-picker/"},"@type":"BlogPosting","url":"https://xdev.in/posts/h5-image-picker/","headline":"移动端H5页面选择图片的各种姿势","dateModified":"2018-12-29T01:05:50+08:00","datePublished":"2018-12-29T01:05:50+08:00","author":{"@type":"Person","name":"Kyle Sun"},"@context":"https://schema.org"}</script><title>移动端H5页面选择图片的各种姿势 | 一剑霜寒十四州</title><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon.png"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon-precomposed.png"><link rel="apple-touch-icon" sizes="57x57" href="/assets/img/favicons/apple-icon-57x57.png"><link rel="apple-touch-icon" sizes="60x60" href="/assets/img/favicons/apple-icon-60x60.png"><link rel="apple-touch-icon" sizes="72x72" href="/assets/img/favicons/apple-icon-72x72.png"><link rel="apple-touch-icon" sizes="76x76" href="/assets/img/favicons/apple-icon-76x76.png"><link rel="apple-touch-icon" sizes="114x114" href="/assets/img/favicons/apple-icon-114x114.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/img/favicons/apple-icon-120x120.png"><link rel="apple-touch-icon" sizes="144x144" href="/assets/img/favicons/apple-icon-144x144.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/img/favicons/apple-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-icon-180x180.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicons/android-icon-192x192.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="96x96" href="/assets/img/favicons/favicon-96x96.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/manifest.json"><meta name='msapplication-config' content='/assets/img/favicons/browserconfig.xml'><meta name="msapplication-TileColor" content="#ffffff"><meta name="msapplication-TileImage" content="/assets/img/favicons/ms-icon-144x144.png"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="dns-prefetch" href="https://fonts.gstatic.com"><link rel="preconnect" href="https://www.google-analytics.com" crossorigin="use-credentials"><link rel="dns-prefetch" href="https://www.google-analytics.com"><link rel="preconnect" href="https://www.googletagmanager.com" crossorigin="anonymous"><link rel="dns-prefetch" href="https://www.googletagmanager.com"><link rel="preconnect" href="cdn.jsdelivr.net"><link rel="dns-prefetch" href="cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha256-LA89z+k9fjgMKQ/kq4OO2Mrf8VltYml/VES+Rg0fh20=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous"><link rel="preload" as="style" href="/assets/css/post.css"><link rel="stylesheet" href="/assets/css/post.css"><link rel="preload" as="style" href="/assets/css/lib/bootstrap-toc.min.css"><link rel="stylesheet" href="/assets/css/lib/bootstrap-toc.min.css" /> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script async src="https://cdn.jsdelivr.net/combine/npm/popper.js@1.15.0,npm/bootstrap@4/dist/js/bootstrap.min.js"></script> <script async src="/assets/js/post.min.js"></script> <script defer src="/app.js"></script><body data-spy="scroll" data-target="#toc"><div id="sidebar" class="d-flex flex-column"><div id="nav-wrapper"><div id="profile-wrapper" class="d-flex flex-column"><div id="avatar" class="d-flex justify-content-center"> <a href="/" alt="avatar"> <img src="/assets/img/sample/avatar.jpg" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="profile-text mt-3"><div class="site-title"> <a href="/">一剑霜寒十四州</a></div><div class="site-subtitle font-italic">Kyle Sun's blog.</div></div></div><ul class="nav flex-column"><li class="nav-item d-flex justify-content-center "> <a href="/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>HOME</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/categories/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>CATEGORIES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/tags/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-tags ml-xl-3 mr-xl-3 unloaded"></i> <span>TAGS</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/archives/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>ARCHIVES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/about/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-info ml-xl-3 mr-xl-3 unloaded"></i> <span>ABOUT</span> </a></ul></div><div class="sidebar-bottom d-flex flex-wrap justify-content-around mt-4"> <span id="mode-toggle-wrapper"> <i class="mode-toggle fas fa-sun" dark-mode-invisible></i> <i class="mode-toggle fas fa-moon" light-mode-invisible></i> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } constructor() { if (this.mode != null) { if (this.mode == ModeToggle.DARK_MODE) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } var self = this; /* always follow the system prefers */ this.sysDarkPrefers.addListener(function() { if (self.mode != null) { if (self.mode == ModeToggle.DARK_MODE) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } }); } /* constructor() */ setDark() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_KEY); sessionStorage.removeItem(ModeToggle.MODE_KEY); } get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode == ModeToggle.DARK_MODE; } get isLightMode() { return this.mode == ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } flipMode() { if (this.hasMode) { if (this.isSysDarkPrefer) { if (this.isLightMode) { this.clearMode(); } else { this.setLight(); } } else { if (this.isDarkMode) { this.clearMode(); } else { this.setDark(); } } } else { if (this.isSysDarkPrefer) { this.setLight(); } else { this.setDark(); } } } /* flipMode() */ } /* ModeToggle */ let toggle = new ModeToggle(); $(".mode-toggle").click(function() { toggle.flipMode(); }); </script> </span> <span class="icon-border"></span> <a href="https://github.com/skx926" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github-alt"></i> </a> <a href="https://twitter.com/skx926" aria-label="twitter" target="_blank" rel="noopener"> <i class="fab fa-twitter"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['skx926','gmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper" class="row justify-content-center topbar-down"><div id="topbar" class="col-11 d-flex h-100 align-items-center justify-content-between"> <span id="breadcrumb"> <span> <a href="/"> Posts </a> </span> <span>移动端H5页面选择图片的各种姿势</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> Post</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" placeholder="Search..."> <i class="fa fa-times-circle fa-fw" id="search-cleaner"></i> </span> <span id="search-cancel" >Cancel</span></div></div><div id="main-wrapper"><div id="main"><div class="row"><div id="post-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="post pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><h1 data-toc-skip>移动端H5页面选择图片的各种姿势</h1><div class="post-meta text-muted d-flex flex-column"><div> Posted <span class="timeago " data-toggle="tooltip" data-placement="bottom" title="Sat, Dec 29, 2018, 1:05 AM +0800" > Dec 29, 2018 <i class="unloaded">2018-12-29T01:05:50+08:00</i> </span> by <span class="author"> Kyle Sun </span></div></div><div class="post-content"><h2 id="通过html的input标签调用系统api进行选择">通过HTML的<code class="language-plaintext highlighter-rouge">&lt;input&gt;</code>标签调用系统api进行选择</h2><p>通过下面的代码就可以调用系统的api选择图片</p><div class="language-html highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre><td class="rouge-code"><pre><span class="c">&lt;!-- 选择文件 --&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span><span class="nt">&gt;</span>
+<span class="c">&lt;!-- 选择图片 --&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span> <span class="na">accept=</span><span class="s">'image/*'</span><span class="nt">&gt;</span>
+<span class="c">&lt;!-- 选择多张图片 --&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span> <span class="na">multiple</span> <span class="na">accept=</span><span class="s">'image/*'</span><span class="nt">&gt;</span>
+<span class="c">&lt;!-- 拍照 --&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"file"</span> <span class="na">capture=</span><span class="s">'camera'</span> <span class="na">accept=</span><span class="s">'image/*'</span><span class="nt">&gt;</span>
+</pre></table></code></div></div><p>这种方式的优点就是使用简单，缺点也很明显：</p><ul><li>没有办法进行自定义的操作，比如说我们希望选择到的图片是压缩过的图片，而不是原图<li>UI是系统默认的样式，不能自定义</ul><p>综上所述，我们伟大的产品经理美眉肯定是不会满足于系统的样式的，所以才有了下面的姿势</p><h2 id="通过naitive端选择图片回传给h5">通过Naitive端选择图片回传给H5</h2><p>这个姿势就涉及到Hybrid混合开发的框架了，现在很多App里面都有一套自己的Hybrid框架，关于这个东西，这里就不多说了，简而言之：就是h5页面通过jsbridge来和Native端进行交互，调用原生的一些能力。</p><p>既然h5可以调用Native的能力了，那我们就可以在Native实现一个高度自定义的图片选择器，解决前一种姿势不候灵活的问题。</p><p>这个姿势乍一看很完美，但是也有个很棘手的问题：由于iOS应用程序沙盒的限制，我们把本地图片路径回传给h5之后，h5其实是没有权限来访问这个路径的，当然也就拿不到图片的数据。</p><p>要解决这个问题，有两套方案：</p><ul><li><p>方案一：Native端拿到图片之后将它上传到图片服务器，然后把图片的地址回传给h5，h5通过这个地址获取图片</p><li><p>方案二：Native端拿到图片之后将图片数据转成base64的字符串，直接回传给h5</p><li><p>方案三：Native端拿到图片之后虚拟出一个url scheme或者http地址回传给h5，h5在加载这个地址的时候Native端拦截这个请求，然后把图片数据作为请求的response进行返回</p><p><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7 " data-src="https://xdev.in/assets/img/posts/h5-image-picker/flow.png" alt="" /></p></ul><p>对于方案一，我们应该都很熟悉。这个方案的优点就是用户的图片都会在服务端存储一份，对于做用户数据分析什么的有用；缺点也很明显：</p><ol><li>需要Native端把图片上传到服务端，图片比较大、多，或者网络环境差的时候耗时会很久<li>需要服务端资源的支持：包括技术人员、服务器等。数据量比较大的话服务器和带宽的开支会很大<li>如果第三方h5需要将图片存储到自己的服务器，就需要先通过网络请求把图片又下载到本地再上传</ol><p>对于方案二，相对于其他两种方案，优点就是步骤简单，但是缺点很致命：由于我们h5和Native交互都采用的是json格式的字符串，安卓端使用的Google自家的<a href="https://github.com/google/gson">Gson库</a>对于解析json文件的大小有所限制。如果要同时传几张原图的话，那数据的大小就得有几十MB，这个大小超过限制。再者，将图片的二进制数据转为base64的string，也有一定的性能损耗。</p><p>对于方案三，缺点几乎没有，我们来说说它的优点：</p><ol><li>Native拿到图片之后存储在沙盒里，速度快，不会涉及到服务端的任何东西<li>第三方h5获取图片数据也是在应用内完成，不涉及网络，速度很快<li>对于数据的大小没有限制，后期要扩展支持视频或者其他文件也很方便</ol><p>结果显而易见，我们最终采用了方案三，下面我们来说说方案三具体的实现。</p><h4 id="保存图片到沙盒">保存图片到沙盒</h4><p>我们使用自定义的图片选择器选择完成之后会拿到一个UIImage的数组，我们把这些图片进行压缩之后保存在<code class="language-plaintext highlighter-rouge">/tmp</code>文件夹里，这里需要注意给每张图片一个唯一的名称，而且为了和下次选择的图片名称不冲突，有个简单的办法就是用当前时间戳（iOS的时间戳是精确到毫秒的，没有人可以在1毫秒内选择两次图片），然后再拼一个图片的序列号，比如<code class="language-plaintext highlighter-rouge">1548918117.421-6.jpg</code>。</p><h4 id="生成虚拟地址">生成虚拟地址</h4><p>生成虚拟地址有两种方式，这两种方式的请求我们客户端都是可以拦截到并返回正确的数据的，但是h5使用起来的感受却是完全不同的。</p><ol><li><p>自定义scheme：比如<code class="language-plaintext highlighter-rouge">shfile://1548918117.421-6.jpg</code></p><li><p>自定义host：比如<code class="language-plaintext highlighter-rouge">https://custom-host/1548918117.421-6.jpg</code></p></ol><h4 id="h5加载图片">H5加载图片</h4><p>如果h5只是使用<code class="language-plaintext highlighter-rouge">&lt;img&gt;</code>标签来展示选择到的图片的话，上面这两种方式没有任何区别。如果h5要获取到图片的数据上传自己的后台的话，第二种方式就可以通过<code class="language-plaintext highlighter-rouge">XMLHttpRequest</code>发起一个http请求就能获取到图片数据：</p><div class="language-javascript highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre><td class="rouge-code"><pre><span class="kd">let</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="dl">'</span><span class="s1">GET</span><span class="dl">'</span><span class="p">,</span> <span class="nx">file</span><span class="p">.</span><span class="nx">path</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">responseType</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">blob</span><span class="dl">'</span><span class="p">;</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">!==</span> <span class="mi">4</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 拿到二进制图片数据</span>
+        <span class="kd">let</span> <span class="nx">blob</span> <span class="o">=</span> <span class="nx">request</span><span class="p">.</span><span class="nx">response</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">下载失败</span><span class="dl">'</span><span class="p">);}</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">send</span><span class="p">();</span>
+</pre></table></code></div></div><p>而第一种方式就无法通过http请求来获取了，但是也是有办法获取的，我所知道的一种办法就是在<code class="language-plaintext highlighter-rouge">&lt;img&gt;</code>的<code class="language-plaintext highlighter-rouge">onload</code>方法中通过canvas重绘图片从而拿到图片数据:</p><div class="language-javascript highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+</pre><td class="rouge-code"><pre><span class="kd">let</span> <span class="nx">image</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Image</span><span class="p">();</span>
+<span class="nx">image</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">let</span> <span class="nx">canvas</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">canvas</span><span class="dl">'</span><span class="p">);</span>
+    <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">width</span><span class="p">;</span>
+    <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">height</span><span class="p">;</span>
+    <span class="kd">let</span> <span class="nx">ctx</span> <span class="o">=</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">getContext</span><span class="p">(</span><span class="dl">'</span><span class="s1">2d</span><span class="dl">'</span><span class="p">);</span>
+    
+    <span class="c1">// 重绘</span>
+    <span class="nx">ctx</span><span class="p">.</span><span class="nx">drawImage</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+    
+    <span class="c1">// 拿到base64形式图片数据</span>
+    <span class="kd">let</span> <span class="nx">dataURL</span> <span class="o">=</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">toDataURL</span><span class="p">(</span><span class="dl">'</span><span class="s1">image/png</span><span class="dl">'</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">image</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">shfile://1548918117.421-6.jpg</span><span class="dl">'</span><span class="p">;</span>
+</pre></table></code></div></div><p>这种方式在请求加载获取图片之外还需要创建Image对象、创建canvas对象、重绘图片、base64转换等步骤，毫无疑问是很低效的，所以我们采用第二种方式。</p><h4 id="通过nsurlprotocol拦截请求并返回数据">通过NSURLProtocol拦截请求并返回数据</h4><p>关于NSURLProtocol，我在另一篇<a href="http://ky1e.me/2019/01/24/32.nsurlprotocol">文章</a>中做了介绍，这里假设你已经知道它怎么用了。</p><p>我们首先注册一个https的scheme，然后创建一个继承于<code class="language-plaintext highlighter-rouge">NSURLProtocol</code>的类，这个类的头文件和实现文件如下所示：</p><p>CustomURLProtocol.h</p><div class="language-objc highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre><td class="rouge-code"><pre><span class="cp">#import &lt;Foundation/Foundation.h&gt;
+</span>
+<span class="k">static</span> <span class="n">NSString</span> <span class="o">*</span> <span class="k">const</span> <span class="n">CustomInterceptHost</span> <span class="o">=</span> <span class="s">@"custom-host"</span><span class="p">;</span>
+
+<span class="k">@interface</span> <span class="nc">CustomURLProtocol</span> <span class="p">:</span> <span class="nc">NSURLProtocol</span>
+
+<span class="k">@end</span>
+</pre></table></code></div></div><p>CustomURLProtocol.m</p><div class="language-objc highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+</pre><td class="rouge-code"><pre><span class="cp">#import "CustomURLProtocol.h"
+</span>
+<span class="k">@implementation</span> <span class="nc">CustomURLProtocol</span>
+
+<span class="k">+</span> <span class="p">(</span><span class="n">BOOL</span><span class="p">)</span><span class="nf">canInitWithRequest</span><span class="p">:(</span><span class="n">NSURLRequest</span> <span class="o">*</span><span class="p">)</span><span class="nv">request</span> <span class="p">{</span>
+    <span class="c1">// 只拦截我们自定义host的请求</span>
+    <span class="k">if</span> <span class="p">([</span><span class="n">request</span><span class="p">.</span><span class="n">URL</span><span class="p">.</span><span class="n">host</span> <span class="nf">isEqualToString</span><span class="p">:</span><span class="n">CustomInterceptHost</span><span class="p">])</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nb">NO</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">+</span> <span class="p">(</span><span class="n">NSURLRequest</span> <span class="o">*</span><span class="p">)</span><span class="nf">canonicalRequestForRequest</span><span class="p">:(</span><span class="n">NSURLRequest</span> <span class="o">*</span><span class="p">)</span><span class="nv">request</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">request</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">startLoading</span> <span class="p">{</span>
+    <span class="c1">// 获取链接中的图片名称</span>
+    <span class="n">NSString</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">URL</span><span class="p">.</span><span class="n">lastPathComponent</span><span class="p">;</span>
+    <span class="n">NSString</span> <span class="o">*</span><span class="n">filePath</span> <span class="o">=</span> <span class="p">[[</span><span class="n">self</span> <span class="nf">directory</span><span class="p">]</span> <span class="nf">stringByAppendingString</span><span class="p">:</span><span class="n">name</span><span class="p">];</span>
+    
+    <span class="c1">// 设置请求头，解决跨域问题</span>
+    <span class="n">NSMutableDictionary</span><span class="o">&lt;</span><span class="n">NSString</span> <span class="o">*</span><span class="p">,</span> <span class="n">NSString</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="n">headerFields</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSMutableDictionary</span><span class="o">&lt;</span><span class="n">NSString</span> <span class="o">*</span><span class="p">,</span> <span class="n">NSString</span> <span class="o">*&gt;</span> <span class="nf">dictionary</span><span class="p">];</span>
+    <span class="n">headerFields</span><span class="p">[</span><span class="s">@"Access-Control-Allow-Origin"</span><span class="p">]</span> <span class="o">=</span> <span class="s">@"*"</span><span class="p">;</span>
+    <span class="n">headerFields</span><span class="p">[</span><span class="s">@"Access-Control-Allow-Headers"</span><span class="p">]</span> <span class="o">=</span> <span class="s">@"Origin, X-Requested-With, Content-Type"</span><span class="p">;</span>
+    <span class="n">headerFields</span><span class="p">[</span><span class="s">@"Content-Type"</span><span class="p">]</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">allHTTPHeaderFields</span><span class="p">[</span><span class="s">@"Accept"</span><span class="p">];</span>
+    
+    <span class="c1">// 创建http响应请求</span>
+    <span class="n">NSHTTPURLResponse</span> <span class="o">*</span><span class="n">httpResponse</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">([[</span><span class="n">NSFileManager</span> <span class="nf">defaultManager</span><span class="p">]</span> <span class="nf">fileExistsAtPath</span><span class="p">:</span><span class="n">filePath</span><span class="p">])</span> <span class="p">{</span>
+        <span class="n">httpResponse</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSHTTPURLResponse</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">initWithURL</span><span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">URL</span> <span class="nf">statusCode</span><span class="p">:</span><span class="mi">200</span> <span class="n">HTTPVersion</span><span class="o">:</span><span class="nb">nil</span> <span class="n">headerFields</span><span class="o">:</span><span class="n">headerFields</span><span class="p">];</span>
+    <span class="p">}</span>
+    <span class="k">else</span> <span class="p">{</span>
+        <span class="n">httpResponse</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSHTTPURLResponse</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">initWithURL</span><span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="n">URL</span> <span class="nf">statusCode</span><span class="p">:</span><span class="mi">404</span> <span class="n">HTTPVersion</span><span class="o">:</span><span class="nb">nil</span> <span class="n">headerFields</span><span class="o">:</span><span class="n">headerFields</span><span class="p">];</span>
+    <span class="p">}</span>
+    
+    <span class="n">NSData</span> <span class="o">*</span><span class="n">imageData</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSData</span> <span class="nf">dataWithContentsOfFile</span><span class="p">:</span><span class="n">filePath</span><span class="p">];</span>
+    
+    <span class="c1">// 响应请求</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">client</span> <span class="nf">URLProtocol</span><span class="p">:</span><span class="n">self</span> <span class="nf">didReceiveResponse</span><span class="p">:</span><span class="n">httpResponse</span> <span class="n">cacheStoragePolicy</span><span class="o">:</span><span class="n">NSURLCacheStorageNotAllowed</span><span class="p">];</span>
+    
+    <span class="c1">// 返回图片数据</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">client</span> <span class="nf">URLProtocol</span><span class="p">:</span><span class="n">self</span> <span class="nf">didLoadData</span><span class="p">:</span><span class="n">imageData</span><span class="p">];</span>
+    
+    <span class="c1">// 结束响应</span>
+    <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">client</span> <span class="nf">URLProtocolDidFinishLoading</span><span class="p">:</span><span class="n">self</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">stopLoading</span> <span class="p">{</span>
+    <span class="c1">// Do nothing.</span>
+<span class="p">}</span>
+
+<span class="c1">// 图片存储路径</span>
+<span class="k">-</span> <span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">directory</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">NSString</span> <span class="nf">stringWithFormat</span><span class="p">:</span><span class="s">@"%@/tmp/"</span><span class="p">,</span> <span class="n">NSHomeDirectory</span><span class="p">()];</span>
+<span class="p">}</span>
+
+<span class="k">@end</span>
+
+</pre></table></code></div></div><p>实现的逻辑比较简单，上面的代码里面我也做了注释，这里就不多讲了。</p><p>以上就是移动端H5页面选择图片的各种姿势，不知道还有没有其他更好的姿势，如果有的话，还请在下面留言交流。</p></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/ios/'>iOS</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/h5/" class="post-tag no-text-decoration" >H5</a> <a href="/tags/hybrid/" class="post-tag no-text-decoration" >Hybrid</a> <a href="/tags/nsurlprotocol/" class="post-tag no-text-decoration" >NSURLProtocol</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> by the author.</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=移动端H5页面选择图片的各种姿势 - 一剑霜寒十四州&url=https://xdev.in/posts/h5-image-picker/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=移动端H5页面选择图片的各种姿势 - 一剑霜寒十四州&u=https://xdev.in/posts/h5-image-picker/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://telegram.me/share?text=移动端H5页面选择图片的各种姿势 - 一剑霜寒十四州&url=https://xdev.in/posts/h5-image-picker/" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i class="fa-fw fas fa-link small" onclick="copyLink()" data-toggle="tooltip" data-placement="top" title="Copy link"></i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted topbar-down"><div class="access"><div id="access-lastmod" class="post"> <span>Recent Update</span><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/posts/swift-crash-catch/">Swift Crash 捕获和分析</a><li><a href="/posts/assign-obj-detector/">Assign对象自动检测</a><li><a href="/posts/mac-glfw/">OpenGL学习笔记（一）：在Mac上编译GLFW并配置到Xcode项目</a><li><a href="/posts/xcode-device-rgb/">解决Storyboard中设置的颜色和代码设置的颜色不一样的问题</a><li><a href="/posts/unix-executable/">Mac如何生成Unix可执行文件</a></ul></div><div id="access-tags"> <span>Trending Tags</span><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/%E7%BB%88%E7%AB%AF/">终端</a> <a class="post-tag" href="/tags/cocoapods/">Cocoapods</a> <a class="post-tag" href="/tags/git/">Git</a> <a class="post-tag" href="/tags/opengl/">OpenGL</a> <a class="post-tag" href="/tags/ssh/">SSH</a> <a class="post-tag" href="/tags/xcode/">Xcode</a> <a class="post-tag" href="/tags/%E4%BB%A3%E7%90%86/">代理</a> <a class="post-tag" href="/tags/%E5%8D%9A%E5%AE%A2/">博客</a> <a class="post-tag" href="/tags/%E6%89%8B%E5%8A%BF/">手势</a> <a class="post-tag" href="/tags/%E8%AF%81%E4%B9%A6/">证书</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"> <span class="pl-3 pt-2 mb-2">Contents</span><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div class="col-12 col-lg-11 col-xl-8"><div id="post-extend-wrapper" class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/corner-radius/"><div class="card-body"> <span class="timeago small" > Nov 13, 2014 <i class="unloaded">2014-11-13T20:31:19+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>iOS图片圆角实现和性能优化</h3><div class="text-muted small"><p> iOS的系统之中用了大量的圆角和圆形的图案，为了是我们的应用更加“接地气”，在iOS开发中我们也会不可避免的需要为自己的View添加圆角。 我在开发中使用圆角有两种情况: 圆形的用户头像 给View或Button添加圆角 这两种情况都可以设置View的CALayer属性的cornerRadius属性来产生圆角，使用方法很简单 view.layer.cornerRadius...</p></div></div></a></div><div class="card"> <a href="/posts/understance-extern/"><div class="card-body"> <span class="timeago small" > Dec 4, 2014 <i class="unloaded">2014-12-04T09:46:00+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>对extern的理解</h3><div class="text-muted small"><p> 很少用到extern这个关键字，对它的了解也只停留在大学课堂那一点印象：外部变量，与局部变量相对。 最近项目中需要用到全局变量，使用全局变量大体上分为3种方式： 给AppDelegate增加property 使用单例模式，其实这个方法跟上一个方法比较类似，因为UIApplication的delegate也同样是一个单例，所以它的属性可以全局去访问 使用外部变量extern关键...</p></div></div></a></div><div class="card"> <a href="/posts/sdk-development/"><div class="card-body"> <span class="timeago small" > Mar 13, 2019 <i class="unloaded">2019-03-13T22:27:34+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>SDK开发和打包静态库遇到的坑</h3><div class="text-muted small"><p> 我们在使用第三方库的时候一般有三种接入方式： 直接把第三方库的源码拖入工程 通过CocoaPods等包管理工具进行引入 通过.a或者.framework静态库引入 前两种情况一般是用于引入开源的项目，比如AFNetworking、SDWebImage；第三种情况一般是用于引入一些不方便开源的SDK，比如微信支付的SDK、百度地图的SDK。 SDK开发注意点 如果我们要...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/posts/remove-default-input-source/" class="btn btn-outline-primary"><p>删除macOS自带的英文输入法</p></a> <a href="/posts/mac-proxy/" class="btn btn-outline-primary"><p>Mac上的各种代理设置</p></a></div><div id="disqus" class="pt-2 pb-2"><p class="font-italic text-center text-muted small"> Comments powered by <a href="https://disqus.com/">Disqus</a>.</p></div><script src="/assets/js/lib/jquery.disqusloader.min.js"></script> <script> var options = { scriptUrl: '//skx926.disqus.com/embed.js', disqusConfig: function() { this.page.url = 'https://xdev.in/posts/h5-image-picker/'; this.page.identifier = '/posts/h5-image-picker/'; } }; $.disqusLoader('#disqus', options); </script></div></div></div><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script> <script type="text/javascript"> const imgs = document.querySelectorAll('#post-wrapper img'); const observer = lozad(imgs); observer.observe(); </script><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center"><div class="footer-left"><p class="mb-0"> © 2021 <a href="https://twitter.com/skx926">Kyle Sun</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> with <a href="https://github.com/cotes2020/jekyll-theme-chirpy/" target="_blank" rel="noopener">Chirpy</a> theme.</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-xl-11 post-content"><div id="search-hints"><h4 class="text-muted mb-4">Trending Tags</h4><a class="post-tag" href="/tags/%E7%BB%88%E7%AB%AF/">终端</a> <a class="post-tag" href="/tags/cocoapods/">Cocoapods</a> <a class="post-tag" href="/tags/git/">Git</a> <a class="post-tag" href="/tags/opengl/">OpenGL</a> <a class="post-tag" href="/tags/ssh/">SSH</a> <a class="post-tag" href="/tags/xcode/">Xcode</a> <a class="post-tag" href="/tags/%E4%BB%A3%E7%90%86/">代理</a> <a class="post-tag" href="/tags/%E5%8D%9A%E5%AE%A2/">博客</a> <a class="post-tag" href="/tags/%E6%89%8B%E5%8A%BF/">手势</a> <a class="post-tag" href="/tags/%E8%AF%81%E4%B9%A6/">证书</a></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.7.3/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="https://xdev.in{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"><div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>{categories}</div><div><i class="fa fa-tag fa-fw"></i>{tags}</div></div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No result founds.</p>' }); </script> <script async src="https://www.googletagmanager.com/gtag/js?id=UA-73055515-1"></script> <script> window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'UA-73055515-1'); </script>
